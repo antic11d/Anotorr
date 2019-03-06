@@ -1,8 +1,11 @@
 package Tracker
 
-import "net"
+import
+(	"net"
+	"../File"
+)
 
 type Tracker struct {
 	Addr *net.TCPAddr
-	ListOfItems []string
+	Map map[string]File.File
 }
