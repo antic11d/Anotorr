@@ -13,7 +13,10 @@ import (
 func handleNode(conn net.Conn) {
 	defer conn.Close()
 
+	fmt.Println("Accepted connection from:", conn.RemoteAddr().String())
+
 	_, err := conn.Write([]byte("Hello! How are you?\nPlease choose an option(d/u):\n"))
+
 
 	checkError(err)
 
@@ -23,7 +26,7 @@ func handleNode(conn net.Conn) {
 
 	checkError(err)
 
-	str := string(recvBuff[:bytesRead-2])
+	str := string(recvBuff[:bytesRead])
 
 	if str == "d" {
 		handleDownload(conn)
@@ -37,10 +40,9 @@ func handleNode(conn net.Conn) {
 
 func handleUpload(conn net.Conn) {
 
-	conn.Write([]byte("Good job"))
-}
+	conn.Write([]byte("Give me a info of file you want to upload\n"))
 
-func handleDownload(conn net.Conn) {
+	//u klijenu cemo da statujemo fajl da bismo poslali
 
 	recvBuff := make([]byte, 2048)
 
@@ -48,7 +50,23 @@ func handleDownload(conn net.Conn) {
 
 	checkError(err)
 
-	str := string(recvBuff[:bytesRead-2])
+	rootHash := string(recvBuff[:bytesRead])
+
+	tracker.Map[rootHash] = File.File{"Uploaded", 100, 10}
+
+}
+
+func handleDownload(conn net.Conn) {
+
+	conn.Write([]byte("Give me a root hash of file you want\n"))
+
+	recvBuff := make([]byte, 2048)
+
+	bytesRead, err := conn.Read(recvBuff)
+
+	checkError(err)
+
+	str := string(recvBuff[:bytesRead])
 
 	for k, v := range tracker.Map {
 
