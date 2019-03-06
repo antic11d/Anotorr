@@ -7,6 +7,7 @@ import (
 	"os"
 	"./structs/Tracker"
 	"./structs/File"
+	"./structs/Requests"
 )
 
 
@@ -92,7 +93,7 @@ func checkError(err error) {
 }
 
 var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9090")
-var tracker = Tracker.Tracker{tcpAddr, make(map[string]File.File)}
+var tracker = Tracker.Tracker{tcpAddr, make(map[string]File.File), make(map[Requests.DownloadRequestKey]Requests.DownloadRequest)}
 
 func main() {
 

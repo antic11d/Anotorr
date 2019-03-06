@@ -13,6 +13,7 @@ type Peer struct {
 	Id string
 	IP net.IP
 	PrivateKey *rsa.PrivateKey
+	RootHashes []string
 }
 
 func CheckError(err error) {
