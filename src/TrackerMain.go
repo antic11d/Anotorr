@@ -4,12 +4,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"./structs/Tracker"
 )
 
-type Tracker struct {
-	addr *net.TCPAddr
-	listOfItems []string
-}
 
 func handleNode(conn net.Conn) {
 	defer conn.Close()
@@ -26,7 +23,7 @@ func handleNode(conn net.Conn) {
 
 	str := string(recvBuff[:bytesRead-2])
 
-	for _, itemName := range tracker.listOfItems {
+	for _, itemName := range tracker.ListOfItems {
 		if itemName == str {
 			_, err := conn.Write([]byte(itemName))
 			checkError(err)
@@ -42,10 +39,10 @@ func checkError(err error) {
 }
 
 var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9090")
-var tracker = Tracker{tcpAddr, []string{"Dimitrije", "Stefan", "Andrija"}}
+var tracker = Tracker.Tracker{tcpAddr, []string{"Dimitrije", "Stefan", "Andrija"}}
 
 func main() {
-	listener, err := net.ListenTCP("tcp", tracker.addr)
+	listener, err := net.ListenTCP("tcp", tracker.Addr)
 
 	checkError(err)
 
