@@ -1,13 +1,14 @@
 package main
 
 import (
+	"./structs/File"
+	"./structs/Requests"
+	"./structs/Tracker"
+	"./structs/IO"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
-	"./structs/Tracker"
-	"./structs/File"
-	"./structs/Requests"
 )
 
 
@@ -16,25 +17,20 @@ func handleNode(conn net.Conn) {
 
 	fmt.Println("Accepted connection from:", conn.RemoteAddr().String())
 
-	_, err := conn.Write([]byte("Hello! How are you?\nPlease choose an option(d/u):\n"))
+	var writer IO.Writer = IO.Writer{conn}
+	writer.Write("Hello! How are you?\nPlease choose an option(d/u):\n")
+
+	reader := IO.Reader{conn}
+
+	var msg = reader.Read()
 
 
-	checkError(err)
-
-	recvBuff := make([]byte, 2048)
-
-	bytesRead, err := conn.Read(recvBuff)
-
-	checkError(err)
-
-	str := string(recvBuff[:bytesRead])
-
-	if str == "d" {
+	if msg == "d" {
 		handleDownload(conn)
-	} else if str == "u" {
+	} else if msg == "u" {
 		handleUpload(conn)
 	} else {
-		conn.Write([]byte("Choose a valid option"))
+		writer.Write("Choose a valid option")
 	}
 
 }
@@ -44,6 +40,7 @@ func handleUpload(conn net.Conn) {
 	conn.Write([]byte("Give me a info of file you want to upload\n"))
 
 	//u klijenu cemo da statujemo fajl da bismo poslali
+
 
 	recvBuff := make([]byte, 2048)
 
@@ -93,7 +90,10 @@ func checkError(err error) {
 }
 
 var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9090")
-var tracker = Tracker.Tracker{tcpAddr, make(map[string]File.File), make(map[Requests.DownloadRequestKey]Requests.DownloadRequest)}
+var tracker = Tracker.Tracker{tcpAddr,
+							make(map[string]File.File),
+				make(map[Requests.DownloadRequestKey]Requests.DownloadRequest),
+}
 
 func main() {
 

@@ -2,8 +2,8 @@ package Tracker
 
 import (
 	"../File"
-	"net"
 	"../Requests"
+	"net"
 )
 
 type Tracker struct {

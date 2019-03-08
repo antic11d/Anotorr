@@ -3,10 +3,15 @@ package main
 import (
 	"./structs/File"
 	"./structs/Node"
+	"./structs/IO"
 	"encoding/json"
 	"fmt"
 	"net"
 )
+
+var trackerReader = IO.Reader{nil}
+var trackerWriter = IO.Writer{nil}
+
 
 func main() {
 
@@ -18,26 +23,15 @@ func main() {
 
 	Node.CheckError(err)
 
-	recvBuff := make([]byte, 2048)
+	trackerReader = IO.Reader{conn}
+	trackerWriter = IO.Writer{conn}
 
-	bytesRead, err := conn.Read(recvBuff)
+	msg := trackerReader.Read()
 
-	Node.CheckError(err)
+	fmt.Println(msg)
 
-	trackerWelcomeMsg := string(recvBuff[:bytesRead-1])
+	downloadFile(conn)
 
-	fmt.Println(trackerWelcomeMsg)
-
-
-	// Ovde da dodamo unos za standardni ulaz kad dodje upload u opciju
-
-	//reader := bufio.NewReader(os.Stdin)
-
-	//text, _ := reader.ReadString('\n')
-
-	//if text == "d" {
-		downloadFile(conn)
-	//}
 
 
 
@@ -46,37 +40,22 @@ func main() {
 
 func downloadFile(conn net.Conn) {
 
-	conn.Write([]byte("d"))
+	trackerWriter.Write("d")
 
-	recvBuff := make([]byte, 2048)
+	msg := trackerReader.Read()
 
-	bytesRead, err := conn.Read(recvBuff)
+	fmt.Println(msg)
 
-	Node.CheckError(err)
+	trackerWriter.Write("zorka")
 
-	trackerMsg := string(recvBuff[:bytesRead-1])
-
-	fmt.Println(trackerMsg)
-
-
-	//reader := bufio.NewReader(os.Stdin)
-
-	//rootHash, _ := reader.ReadString('\n')
-
-	conn.Write([]byte("zorka"))
-
-	bytesRead, err = conn.Read(recvBuff)
-
-	Node.CheckError(err)
-
-	readFile := recvBuff[:bytesRead]
+	msg = trackerReader.Read()
 
 	var f File.File
 
-	err = json.Unmarshal(readFile, &f)
+	err := json.Unmarshal([]byte(msg), &f)
 	Node.CheckError(err)
 
-	fmt.Println(f)
+	fmt.Printf("%+v\n", f)
 }
 
 
