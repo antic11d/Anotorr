@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"container/list"
 )
 
 
@@ -17,7 +18,7 @@ func handleNode(conn net.Conn) {
 
 	fmt.Println("Accepted connection from:", conn.RemoteAddr().String())
 
-	var writer IO.Writer = IO.Writer{conn}
+	var writer = IO.Writer{conn}
 	writer.Write("Hello! How are you?\nPlease choose an option(d/u):\n")
 
 	reader := IO.Reader{conn}
@@ -26,7 +27,7 @@ func handleNode(conn net.Conn) {
 
 
 	if msg == "d" {
-		handleDownload(conn)
+		handleDownload(reader, writer)
 	} else if msg == "u" {
 		handleUpload(conn)
 	} else {
@@ -51,34 +52,47 @@ func handleUpload(conn net.Conn) {
 	rootHash := string(recvBuff[:bytesRead])
 
 	tracker.Map[rootHash] = File.File{"Uploaded", 100, 10}
-
 }
 
-func handleDownload(conn net.Conn) {
+func handleDownload(reader IO.Reader, writer IO.Writer) {
 
-	conn.Write([]byte("Give me a root hash of file you want\n"))
+	writer.Write("Give me a root hash of file you want and public key\n")
 
-	recvBuff := make([]byte, 2048)
+	msg := reader.Read()
 
-	bytesRead, err := conn.Read(recvBuff)
+	requestFromPeer := Requests.DownloadRequestKey{}
+
+	err := json.Unmarshal([]byte(msg), &requestFromPeer)
 
 	checkError(err)
 
-	str := string(recvBuff[:bytesRead])
+	fmt.Printf("Got request: %+v\n", requestFromPeer)
 
-	for k, v := range tracker.Map {
+	// Hardkodovano maksimalna velicina liste 100
+	tracker.DownloadRequests[requestFromPeer] = Requests.DownloadRequest{new(list.List), 0}
 
-		if k == str {
+	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
+	// Javljam se svima osim onome ko mi je trazio request!!!!
+	conn, err := net.Dial("tcp", "192.168.0.28:9091") // 9091 hardkodovano jer tamo slusa peer
+	checkError(err)
 
-			msg, err := json.Marshal(v)
+	tmpReader := IO.Reader{conn}
+	tmpWriter := IO.Writer{conn}
 
-			checkError(err)
+	wrappedObject := Requests.WrappedRequest{requestFromPeer, tracker.DownloadRequests[requestFromPeer]}
 
-			conn.Write([]byte(msg))
-		}
+	tmpMsg, err := json.Marshal(wrappedObject)
+	checkError(err)
+	tmpWriter.Write(string(tmpMsg))
+	fmt.Printf("Prosao write, i napisao: %+v\n", wrappedObject)
 
-	}
+	// Dobijem ip od osobe koja kaze da ima fajl
+	peerIP := tmpReader.Read()
 
+	tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack(peerIP)
+
+
+	fmt.Printf("Key: %+v, Value: %+v\n", tracker.DownloadRequests[requestFromPeer], tracker.DownloadRequests[requestFromPeer].CryptedIPs)
 }
 
 
