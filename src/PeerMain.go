@@ -30,6 +30,8 @@ func main() {
 
 	downloadFile(conn, selfNode)
 
+	fmt.Println("About to listen on port for tracker info...")
+
 	selfNode.ListenTracker()
 }
 
