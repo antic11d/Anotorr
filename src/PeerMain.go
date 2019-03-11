@@ -3,8 +3,6 @@ package main
 import (
 	"./structs/IO"
 	"./structs/Node"
-	"./structs/Requests"
-	"encoding/json"
 	"fmt"
 	"net"
 )
@@ -13,42 +11,27 @@ var trackerReader = IO.Reader{nil}
 var trackerWriter = IO.Writer{nil}
 
 func main() {
-	var selfNode = Node.InitializeNode()
+	var self = Node.InitializeNode()
 
-	fmt.Printf("Hello, my name is: %+v\n", selfNode)
+	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
+	// Javljam se trekeru. Hardkodovan localhost
 	conn, err := net.Dial("tcp", "127.0.0.1:9090")
-
 	Node.CheckError(err)
 
-	trackerReader = IO.Reader{conn}
-	trackerWriter = IO.Writer{conn}
+	self.ReqConn = conn
 
+	// Citac i pisac otvoreni ka trekeru za postavjanje requestova
+	trackerReader = IO.Reader{self.ReqConn}
+	trackerWriter = IO.Writer{self.ReqConn}
+
+	// Poruka predstavljanja trekera, choose option itd...
 	msg := trackerReader.Read()
-
 	fmt.Println(msg)
 
-	downloadFile(conn, selfNode)
+	self.RequestDownload(trackerWriter, trackerReader)
 
 	fmt.Println("About to listen on port for tracker info...")
 
-	selfNode.ListenTracker()
+	self.ListenTracker()
 }
-
-func downloadFile(conn net.Conn, peer *Node.Peer) {
-	//fmt.Scanln()
-	trackerWriter.Write("d")
-
-	msg := trackerReader.Read()
-
-	fmt.Println(msg)
-
-	request := Requests.DownloadRequestKey{"zorka", &peer.PrivateKey.PublicKey}
-	jsonReq, err := json.Marshal(request)
-	if err != nil {
-		panic(err)
-	}
-	trackerWriter.Write(string(jsonReq))
-}
-
-

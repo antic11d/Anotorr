@@ -9,7 +9,6 @@ type Writer struct {
 }
 
 func (w Writer) Write(msg string) {
-
 	_,err := w.Conn.Write([]byte(msg))
 	if err != nil {
 		panic(err)
