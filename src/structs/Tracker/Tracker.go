@@ -51,20 +51,20 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	err := json.Unmarshal([]byte(request), &requestFromPeer)
 	CheckError(err)
 
-	fmt.Printf("Got request: %+v from %+v\n", requestFromPeer, reader.Conn)
+	fmt.Printf("Got request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
 
 	// Hardkodovano maksimalna velicina liste 100
 	tracker.DownloadRequests[requestFromPeer] = Requests.DownloadRequest{new(list.List), 0}
 
 	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
-	tmpConn, err := net.Dial("tcp", "10.0.151.148:9091") // 9091 hardkodovano jer tamo slusa peer
+	tmpConn, err := net.Dial("tcp", "10.0.162.98:9091") // 9091 hardkodovano jer tamo slusa peer
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}
 	tmpWriter := IO.Writer{tmpConn}
 
-	wrappedObject := Requests.WrappedRequest{requestFromPeer, tracker.DownloadRequests[requestFromPeer]}
+	wrappedObject := Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]}
 
 	tmpMsg, err := json.Marshal(wrappedObject)
 	CheckError(err)
@@ -75,22 +75,25 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	// Dobijem ip od osobe koja kaze da ima fajl
 	// Ovde ce IP biti kodiran normalno
 	peerIP := tmpReader.Read()
+	fmt.Println("[HandleDownload] dobio ip:" + peerIP + " od peera: " + tmpReader.Conn.RemoteAddr().String())
 
 	// Dodajemo ga u listu koju treba poslati onome ko je trazio request
 	// Ovde ce morati i sinhronizacija, da se zakljuca mapa
-	fmt.Printf("[HandleDownload] Dodajem kriptovani IP u listu...")
+	fmt.Printf("[HandleDownload] Dodajem kriptovani IP u listu...\n")
 	tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack(peerIP)
-	tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack("nesto_rendom")
 
 	// Nakon sto se "napuni" lista kriptovanih, posalji onome ko je trazio ceo objekat
-	fmt.Printf("[HandleDownload] Objekat koji treba poslati peer-u da moze da se javi kome treba itd...\nKey: %+v, Kriptovani IP: %+v\n", tracker.DownloadRequests[requestFromPeer], tracker.DownloadRequests[requestFromPeer].CryptedIPs)
+	fmt.Printf("[HandleDownload] Objekat koji treba poslati peer-u da moze da se javi kome treba itd...\nKey: %+v, duzina liste: %+v\n", tracker.DownloadRequests[requestFromPeer], tracker.DownloadRequests[requestFromPeer].CryptedIPs.Len())
 
 	// sto ne moze???
 	//tracker.DownloadRequests[requestFromPeer].Served = 1
 
-	msgFinal, err := json.Marshal(Requests.WrappedRequest{requestFromPeer, tracker.DownloadRequests[requestFromPeer]})
+	msgFinal, err := json.Marshal(Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]})
 	CheckError(err)
 
+	// Lista prazna???
+	fmt.Println("[HandleDownload] msgFinal:" + string(msgFinal))
+	fmt.Printf("%+v \n", tracker.DownloadRequests[requestFromPeer].CryptedIPs)
 	writer.Write(string(msgFinal))
 }
 

@@ -17,6 +17,6 @@ type DownloadRequest struct {
 }
 
 type WrappedRequest struct {
-	Key DownloadRequestKey
+	Key *DownloadRequestKey
 	Value DownloadRequest
 }
