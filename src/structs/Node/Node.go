@@ -81,6 +81,7 @@ func (peer Peer) ListenTracker() {
 }
 
 func handleTracker(conn net.Conn) {
+	defer conn.Close()
 	fmt.Printf("Hello from handletracker, conn: %+v\n", conn)
 	var reader = IO.Reader{conn}
 	var writer = IO.Writer{conn}
@@ -96,9 +97,6 @@ func handleTracker(conn net.Conn) {
 
 	// Ovde treba da kazem imam taj fajl, i da vratim svoj IP trekeru
 	writer.Write("192.168.0.28")
-
-
-
 }
 
 
