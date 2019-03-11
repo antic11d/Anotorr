@@ -30,14 +30,14 @@ func CheckError(err error) {
 	}
 }
 
-func getMyIp() (net.IP) {
+func getMyIP() (net.IP) {
 	//Ovde ce da se implementira UPNP
 
 	host, _ := os.Hostname()
 	addrs, _ := net.LookupIP(host)
 	for _, addr := range addrs {
 		if ipv4 := addr.To4(); ipv4 != nil {
-			fmt.Println("IPv4: ", ipv4)
+			fmt.Println("[getMyIP]IPv4: ", ipv4)
 			return ipv4
 		}
 	}
@@ -51,7 +51,7 @@ func InitializeNode() (p *Peer){
 	CheckError(err)
 
 	// ID generisati dinamicki!!!
-	return &Peer{ID:"idPrvi", PrivateKey:pk, IP:getMyIp()}
+	return &Peer{ID:"idPrvi", PrivateKey:pk, IP: getMyIP()}
 
 }
 
