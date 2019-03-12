@@ -15,7 +15,7 @@ func main() {
 
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
-	// Javljam se trekeru. Hardkodovan localhost
+	//Javljam se trekeru. Hardkodovan localhost
 	conn, err := net.Dial("tcp", "127.0.0.1:9090")
 	Node.CheckError(err)
 
@@ -33,5 +33,12 @@ func main() {
 
 	fmt.Println("About to listen on port for tracker info...")
 
-	self.ListenTracker()
+	self.WaitGroup.Add(2)
+
+
+	go self.ListenTracker()
+
+	//go self.ListenPeer()
+
+	self.WaitGroup.Wait()
 }

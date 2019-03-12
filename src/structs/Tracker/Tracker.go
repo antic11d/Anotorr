@@ -4,7 +4,7 @@ import (
 	"../File"
 	"../Requests"
 	"../IO"
-	"container/list"
+	//"container/list"
 	"encoding/json"
 	"fmt"
 	"net"
@@ -14,7 +14,7 @@ import (
 type Tracker struct {
 	Addr *net.TCPAddr
 	Map map[string]File.File
-	DownloadRequests map[Requests.DownloadRequestKey] Requests.DownloadRequest
+	DownloadRequests map[Requests.DownloadRequestKey] *Requests.DownloadRequest
 }
 
 
@@ -51,14 +51,16 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	err := json.Unmarshal([]byte(request), &requestFromPeer)
 	CheckError(err)
 
-	fmt.Printf("Here is a request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
+	fmt.Printf("Got request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
 
 	// Hardkodovano maksimalna velicina liste 100
-	tracker.DownloadRequests[requestFromPeer] = Requests.DownloadRequest{new(list.List), 0}
+	var helpInt int
+	helpInt = 0
+	tracker.DownloadRequests[requestFromPeer] = &Requests.DownloadRequest{make([]string, 0), &helpInt}
 
 	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
-	tmpConn, err := net.Dial("tcp", "10.0.162.98:9091") // 9091 hardkodovano jer tamo slusa peer
+	tmpConn, err := net.Dial("tcp", "192.168.0.28:9091") // 9091 hardkodovano jer tamo slusa peer
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}
@@ -80,13 +82,19 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	// Dodajemo ga u listu koju treba poslati onome ko je trazio request
 	// Ovde ce morati i sinhronizacija, da se zakljuca mapa
 	fmt.Printf("[HandleDownload] Dodajem kriptovani IP u listu...\n")
-	tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack(peerIP)
+	//tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack(peerIP)
+	tracker.DownloadRequests[requestFromPeer].CryptedIPs =
+					append(tracker.DownloadRequests[requestFromPeer].CryptedIPs, peerIP)
 
 	// Nakon sto se "napuni" lista kriptovanih, posalji onome ko je trazio ceo objekat
-	fmt.Printf("[HandleDownload] Objekat koji treba poslati peer-u da moze da se javi kome treba itd...\nKey: %+v, duzina liste: %+v\n", tracker.DownloadRequests[requestFromPeer], tracker.DownloadRequests[requestFromPeer].CryptedIPs.Len())
+	fmt.Printf("[HandleDownload] Objekat koji treba poslati peer-u da moze da se javi kome treba itd...\nKey: %+v, duzina liste: %+v\n",
+		tracker.DownloadRequests[requestFromPeer], len(tracker.DownloadRequests[requestFromPeer].CryptedIPs))
 
 	// sto ne moze???
-	//tracker.DownloadRequests[requestFromPeer].Served = 1
+	//served *int := 1
+	*tracker.DownloadRequests[requestFromPeer].Served = 1
+
+	fmt.Println("Ovo je served kod nas\n", tracker.DownloadRequests[requestFromPeer].Served)
 
 	msgFinal, err := json.Marshal(Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]})
 	CheckError(err)

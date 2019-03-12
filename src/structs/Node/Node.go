@@ -9,6 +9,7 @@ import (
 	"os"
 	"../IO"
 	"../Requests"
+	"sync"
 )
 
 type Peer struct {
@@ -21,6 +22,7 @@ type Peer struct {
 	ListenerTracker *net.TCPListener
 	ListenerPeer *net.TCPListener
 	ReqConn net.Conn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
+	WaitGroup sync.WaitGroup
 }
 
 func CheckError(err error) {
@@ -51,7 +53,8 @@ func InitializeNode() (p *Peer){
 	CheckError(err)
 
 	// ID generisati dinamicki!!!
-	return &Peer{ID:"idPrvi", PrivateKey:pk, IP: getMyIP()}
+	var wg sync.WaitGroup
+	return &Peer{ID:"idPrvi", PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
 
 }
 
@@ -91,7 +94,7 @@ func handleTracker(conn net.Conn) {
 	CheckError(err)
 
 	fmt.Printf("[handleTracker] Dobio objekat: %+v\n", wrappedRequest)
-	fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
+	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
 	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
 	tmpWriter.Write("10.0.151.148")
@@ -121,7 +124,46 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	err = json.Unmarshal([]byte(msg), &completedReq)
 	CheckError(err)
 
-	fmt.Printf("[RequestDownload] Treba da se javim svima iz liste: %+v i duzine %+v\n", completedReq.Value.CryptedIPs, completedReq.Value.CryptedIPs.Len())
+	fmt.Printf("[RequestDownload] Treba da se javim svima iz liste: %+v i duzine %+v\n", completedReq.Value.CryptedIPs, len(completedReq.Value.CryptedIPs))
 }
 
+func (peer Peer) ListenPeer() {
+
+	var pListenAddr, err = net.ResolveTCPAddr("tcp4", ":9092")
+	CheckError(err)
+
+	peer.ListenerPeer, err = net.ListenTCP("tcp", pListenAddr)
+	CheckError(err)
+
+	for  {
+		conn, err := peer.ListenerPeer.Accept()
+		fmt.Println("[ListenPeer] Accepted connection from peer...")
+		if err != nil {
+			fmt.Println("Error while accepting connection from peer, continuing...")
+			continue
+		}
+
+		go handlePeer(conn)
+	}
+
+}
+
+func handlePeer(conn net.Conn) {
+	defer conn.Close()
+	var tmpReader = IO.Reader{conn}
+	var tmpWriter = IO.Writer{conn}
+
+	// Poruka sa objektom koji sadrzi fajl koji neko iz mreze hoce da skida
+
+	//tmpWriter.Write()
+
+	rootHash := tmpReader.Read()
+
+
+	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
+	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
+
+	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
+	tmpWriter.Write("kurcina")
+}
 
