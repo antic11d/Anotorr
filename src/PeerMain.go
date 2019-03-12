@@ -4,7 +4,6 @@ import (
 	"./structs/IO"
 	"./structs/Node"
 	"fmt"
-	"net"
 )
 
 var trackerReader = IO.Reader{nil}
@@ -16,20 +15,20 @@ func main() {
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
 	//Javljam se trekeru. Hardkodovan localhost
-	conn, err := net.Dial("tcp", "127.0.0.1:9090")
-	Node.CheckError(err)
+	//conn, err := net.Dial("tcp", "127.0.0.1:9090")
+	//Node.CheckError(err)
+	//
+	//self.ReqConn = conn
+	//
+	//// Citac i pisac otvoreni ka trekeru za postavjanje requestova
+	//trackerReader = IO.Reader{self.ReqConn}
+	//trackerWriter = IO.Writer{self.ReqConn}
+	//
+	//// Poruka predstavljanja trekera, choose option itd...
+	//msg := trackerReader.Read()
+	//fmt.Println(msg)
 
-	self.ReqConn = conn
-
-	// Citac i pisac otvoreni ka trekeru za postavjanje requestova
-	trackerReader = IO.Reader{self.ReqConn}
-	trackerWriter = IO.Writer{self.ReqConn}
-
-	// Poruka predstavljanja trekera, choose option itd...
-	msg := trackerReader.Read()
-	fmt.Println(msg)
-
-	self.RequestDownload(trackerWriter, trackerReader)
+	//self.RequestDownload(trackerWriter, trackerReader)
 
 	fmt.Println("About to listen on port for tracker info...")
 
@@ -38,7 +37,7 @@ func main() {
 
 	go self.ListenTracker()
 
-	//go self.ListenPeer()
+	go self.ListenPeer()
 
 	self.WaitGroup.Wait()
 }

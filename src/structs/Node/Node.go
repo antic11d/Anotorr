@@ -1,14 +1,14 @@
 package Node
 
 import (
+	"../IO"
+	"../Requests"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
 	"net"
 	"os"
-	"../IO"
-	"../Requests"
 	"sync"
 )
 
@@ -97,7 +97,7 @@ func handleTracker(conn net.Conn) {
 	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
 	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
-	tmpWriter.Write("10.0.151.148")
+	tmpWriter.Write("192.168.0.19")
 }
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
@@ -125,6 +125,15 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	CheckError(err)
 
 	fmt.Printf("[RequestDownload] Treba da se javim svima iz liste: %+v i duzine %+v\n", completedReq.Value.CryptedIPs, len(completedReq.Value.CryptedIPs))
+
+	var downloadWG sync.WaitGroup
+	var list = completedReq.Value.CryptedIPs
+	downloadWG.Add(len(list))
+	for i := 0; i < len(list); i++  {
+		go peer.connectToPeer(list[i], &downloadWG)
+	}
+
+	downloadWG.Wait()
 }
 
 func (peer Peer) ListenPeer() {
@@ -150,20 +159,54 @@ func (peer Peer) ListenPeer() {
 
 func handlePeer(conn net.Conn) {
 	defer conn.Close()
-	var tmpReader = IO.Reader{conn}
-	var tmpWriter = IO.Writer{conn}
-
-	// Poruka sa objektom koji sadrzi fajl koji neko iz mreze hoce da skida
-
-	//tmpWriter.Write()
+	var tmpReader= IO.Reader{conn}
+	var tmpWriter= IO.Writer{conn}
 
 	rootHash := tmpReader.Read()
 
-
 	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
-	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
-	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
+	//dat, err := ioutil.ReadFile("/home/andrija/goTorr/misk/probaSlika.jpg")
+	//CheckError(err)
+	//fmt.Print(string(dat))
+
+	//fmt.Println("Size \n", len(dat))
+
+	//file, err := os.Open("/home/andrija/goTorr/misk/probaSlika.jpg")
+	//
+	//sendBuffer := make([]byte, 1024)
+	//
+	//for {
+	//	_, err = file.Read(sendBuffer)
+	//	fmt.Println(len(sendBuffer))
+	//	if err == io.EOF {
+	//		conn.Write([]byte("stop"))
+	//		break
+	//	}
+	//	conn.Write(sendBuffer)
+	//}
+
+	//w := bufio.NewWriter()
+
 	tmpWriter.Write("kurcina")
+}
+
+func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup) {
+	defer group.Done()
+
+	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
+
+	conn, err := net.Dial("tcp", IP + ":9092")
+	CheckError(err)
+
+	tmpReader := IO.Reader{conn}
+	tmpWriter := IO.Writer{conn}
+
+	// Hardkodovan root hash fajla koji hocu
+	tmpWriter.Write("zorka")
+
+	msg := tmpReader.Read()
+
+	fmt.Printf("[ConnectToPeer] Od %+v sam dobio bajtove: %+v\n", tmpReader.Conn.RemoteAddr(), msg)
 }
 
