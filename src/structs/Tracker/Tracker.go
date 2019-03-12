@@ -51,7 +51,7 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	err := json.Unmarshal([]byte(request), &requestFromPeer)
 	CheckError(err)
 
-	fmt.Printf("Got request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
+	fmt.Printf("Here is a request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
 
 	// Hardkodovano maksimalna velicina liste 100
 	tracker.DownloadRequests[requestFromPeer] = Requests.DownloadRequest{new(list.List), 0}
