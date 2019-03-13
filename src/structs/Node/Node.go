@@ -129,8 +129,14 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	var downloadWG sync.WaitGroup
 	var list = completedReq.Value.CryptedIPs
 	downloadWG.Add(len(list))
+
+	// Napravi fajl, i fji posalji fd
+	f, err := os.Create("/home/antic/Desktop/proba.txt")
+	CheckError(err)
 	for i := 0; i < len(list); i++  {
-		go peer.connectToPeer(list[i], &downloadWG)
+		// ovde ce da se salje i pokazivac na niz koji sadrzi da li je part validan, tu ce biti resen problem ako neko odustane
+
+		go peer.connectToPeer(list[i], &downloadWG, f, 5)
 	}
 
 	downloadWG.Wait()
@@ -166,32 +172,17 @@ func handlePeer(conn net.Conn) {
 
 	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
 
-	//dat, err := ioutil.ReadFile("/home/andrija/goTorr/misk/probaSlika.jpg")
-	//CheckError(err)
-	//fmt.Print(string(dat))
+	f, err := os.Open("misc/probaSlika.jpg")
+	CheckError(err)
 
-	//fmt.Println("Size \n", len(dat))
+	defer f.Close()
 
-	//file, err := os.Open("/home/andrija/goTorr/misk/probaSlika.jpg")
-	//
-	//sendBuffer := make([]byte, 1024)
-	//
-	//for {
-	//	_, err = file.Read(sendBuffer)
-	//	fmt.Println(len(sendBuffer))
-	//	if err == io.EOF {
-	//		conn.Write([]byte("stop"))
-	//		break
-	//	}
-	//	conn.Write(sendBuffer)
-	//}
+	fInfo, err := f.Stat()
 
-	//w := bufio.NewWriter()
-
-	tmpWriter.Write("kurcina")
+	tmpWriter.WriteFile("misc/probaSlika.jpg", 0, fInfo.Size())
 }
 
-func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup) {
+func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, numOfPart int) {
 	defer group.Done()
 
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
@@ -205,8 +196,12 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup) {
 	// Hardkodovan root hash fajla koji hocu
 	tmpWriter.Write("zorka")
 
-	msg := tmpReader.Read()
+	partBytes, partSize := tmpReader.ReadFile()
 
-	fmt.Printf("[ConnectToPeer] Od %+v sam dobio bajtove: %+v\n", tmpReader.Conn.RemoteAddr(), msg)
+	// Ovde mora da se zakljuca fajl pre pisanja
+	_, err = f.WriteAt(partBytes, int64(partSize*numOfPart))
+	CheckError(err)
+
+	fmt.Println("[connectToPeer]", len(partBytes))
 }
 

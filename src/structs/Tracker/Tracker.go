@@ -60,7 +60,7 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
-	tmpConn, err := net.Dial("tcp", "192.168.0.28:9091") // 9091 hardkodovano jer tamo slusa peer
+	tmpConn, err := net.Dial("tcp", "10.0.162.98:9091") // 9091 hardkodovano jer tamo slusa peer
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}
