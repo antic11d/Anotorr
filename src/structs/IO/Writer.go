@@ -18,29 +18,42 @@ func (w Writer) Write(msg string) {
 	}
 }
 func (w Writer) WriteFile(filename string, offset int64, partSize int64){
-
-	f, err := os.Open("misc/txtFile.txt")
+	f, err := os.Open(filename)
 	defer f.Close()
 	CheckError(err);
 	_,err = f.Seek(partSize*offset,0)
 	CheckError(err)
 
 	tmpPartSize := strconv.FormatInt(partSize,10)
-	bufferSize, err := strconv.Atoi(tmpPartSize)
-	CheckError(err)
-	buffer := make([]byte, bufferSize)
-	bytesRead, err := f.Read(buffer)
+
 	CheckError(err)
 
-	fmt.Println(string(tmpPartSize))
-
+	// Saljem downloaderu velicinu parta
 	w.Write(string(tmpPartSize))
 
+	// Ovde citam OK da je stigla velicina fajla
 	tmpBuffer := make([]byte, 3)
 	_, err = w.Conn.Read(tmpBuffer)
+	fmt.Println()
 	CheckError(err)
 
-	_, err = w.Conn.Write(buffer[:bytesRead])
+	fmt.Printf("[WriteFile] tmpbuffer pre iscitavanja fajla: %+v\n",tmpBuffer)
+
+	msg := make([]byte, 5)
+	tmpBuffer = make([]byte, 256)
+	var bytesSent int64 = 0
+
+	for bytesSent < partSize {
+		bytesRead, err := f.Read(tmpBuffer)
+
+		n, err := w.Conn.Write(tmpBuffer[:bytesRead])
+		CheckError(err)
+
+		_, err = w.Conn.Read(msg)
+
+		bytesSent += int64(n)
+	}
+
 	CheckError(err)
 }
 func CheckError(err error) {

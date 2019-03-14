@@ -20,15 +20,15 @@ func (r Reader) Read() string  {
 	return string(recvBuff[:bytesRead])
 }
 
-func (r Reader) ReadFile() ([]byte, int) {
+func (r Reader) ReadFile() ([]byte, int64) {
 	partSize := r.Read()
 	r.Conn.Write([]byte("ok"))
 
 	pSize, err := strconv.Atoi(partSize)
 	CheckError(err)
 
-	buff := make([]byte, pSize)
-	finalBuff := make([]byte, pSize)
+	buff := make([]byte, 256)
+	finalBuff := make([]byte, 0)
 
 	CheckError(err)
 
@@ -40,19 +40,23 @@ func (r Reader) ReadFile() ([]byte, int) {
 		n, err := r.Conn.Read(buff)
 		CheckError(err)
 
+		_, err = r.Conn.Write([]byte("next"))
+		CheckError(err)
+
 		fmt.Printf("[ReadFile] %+v-ti read Od %+v sam dobio bajtove: %+v\n", i, r.Conn.RemoteAddr(), n)
+
+		finalBuff = append(finalBuff, buff[:n]...)
 
 		sum += int64(n)
 		if sum == int64(pSize) {
+			fmt.Println("About to break:", sum)
 			break
 		}
-
-		finalBuff = append(finalBuff, buff...)
 
 		CheckError(err)
 	}
 
-	fmt.Println("[ReadFile] Done reading!")
 
-	return finalBuff, len(finalBuff)
+	//rBuff := finalBuff[:sum]
+	return finalBuff, sum
 }

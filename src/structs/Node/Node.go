@@ -131,7 +131,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	downloadWG.Add(len(list))
 
 	// Napravi fajl, i fji posalji fd
-	f, err := os.Create("/home/antic/Desktop/proba.txt")
+	f, err := os.Create("/home/antic/Desktop/probaSlika.jpg")
 	CheckError(err)
 	for i := 0; i < len(list); i++  {
 		// ovde ce da se salje i pokazivac na niz koji sadrzi da li je part validan, tu ce biti resen problem ako neko odustane
@@ -196,12 +196,19 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 	// Hardkodovan root hash fajla koji hocu
 	tmpWriter.Write("zorka")
 
-	partBytes, partSize := tmpReader.ReadFile()
+	partBytes, size := tmpReader.ReadFile()
 
 	// Ovde mora da se zakljuca fajl pre pisanja
-	_, err = f.WriteAt(partBytes, int64(partSize*numOfPart))
+	//_, err = f.WriteAt(partBytes[:size], 0)
+
+	fmt.Println(len(partBytes[:size]))
+
+	f.Write(partBytes[:size])
+
+	fmt.Printf("%+v\n", partBytes[:size])
+
 	CheckError(err)
 
-	fmt.Println("[connectToPeer]", len(partBytes))
+
 }
 
