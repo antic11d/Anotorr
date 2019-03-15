@@ -262,13 +262,15 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 
 	partBytes, size := tmpReader.ReadFile()
 
-	chunkStatuses[numOfPart] = 2
+
 	// Ovde mora da se zakljuca fajl pre pisanja
 
 
 	mutex.Lock()
 
 	_, err = f.WriteAt(partBytes[:size], 0)
+
+	chunkStatuses[numOfPart] = 2
 
 	*numOfDownloaded++
 
