@@ -7,7 +7,7 @@ import (
 )
 
 type Reader struct {
-	Conn net.Conn
+	Conn *net.TCPConn
 }
 
 func (r Reader) Read() string  {

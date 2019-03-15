@@ -151,7 +151,7 @@ func (peer Peer) ListenPeer() {
 	CheckError(err)
 
 	for  {
-		conn, err := peer.ListenerPeer.Accept()
+		conn, err := peer.ListenerPeer.AcceptTCP()
 		fmt.Println("[ListenPeer] Accepted connection from peer...")
 		if err != nil {
 			fmt.Println("Error while accepting connection from peer, continuing...")
@@ -163,7 +163,7 @@ func (peer Peer) ListenPeer() {
 
 }
 
-func handlePeer(conn net.Conn) {
+func handlePeer(conn *net.TCPConn) {
 	defer conn.Close()
 	var tmpReader= IO.Reader{conn}
 	var tmpWriter= IO.Writer{conn}
@@ -187,7 +187,10 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
-	conn, err := net.Dial("tcp", IP + ":9092")
+	//conn, err := net.Dial("tcp", IP + ":9092")
+	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9092")
+	//lAddr, err := net.ResolveTCPAddr("tcp", )
+	conn, err := net.DialTCP("tcp", nil, rAddr)
 	CheckError(err)
 
 	tmpReader := IO.Reader{conn}

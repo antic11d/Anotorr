@@ -18,7 +18,7 @@ type Tracker struct {
 }
 
 
-func (tracker Tracker) HandleNode(conn net.Conn) {
+func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	defer conn.Close()
 
 	fmt.Println("Accepted connection from:", conn.RemoteAddr().String())
@@ -60,7 +60,8 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
-	tmpConn, err := net.Dial("tcp", "10.0.162.98:9091") // 9091 hardkodovano jer tamo slusa peer
+	peerAddr, err := net.ResolveTCPAddr("tcp", "10.0.155.169:9091")
+	tmpConn, err := net.DialTCP("tcp", nil, peerAddr) // 9091 hardkodovano jer tamo slusa peer
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}

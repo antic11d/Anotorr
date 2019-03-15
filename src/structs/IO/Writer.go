@@ -8,7 +8,7 @@ import (
 )
 
 type Writer struct {
-	Conn net.Conn
+	Conn *net.TCPConn
 }
 
 func (w Writer) Write(msg string) {

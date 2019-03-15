@@ -25,7 +25,7 @@ func main() {
 	Tracker.CheckError(err)
 
 	for {
-		conn, err := listener.Accept()
+		conn, err := listener.AcceptTCP()
 
 		if err != nil {
 			fmt.Println("Error while accepting. Continuing...")
