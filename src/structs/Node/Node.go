@@ -21,8 +21,15 @@ type Peer struct {
 	PeerListenAddr *net.TCPAddr
 	ListenerTracker *net.TCPListener
 	ListenerPeer *net.TCPListener
-	ReqConn net.Conn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
+	ReqConn *net.TCPConn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
 	WaitGroup sync.WaitGroup
+}
+
+type MsgToNode struct {
+
+	RootHash string
+	ChunkNum int
+
 }
 
 func CheckError(err error) {
@@ -69,7 +76,7 @@ func (peer Peer) ListenTracker() {
 	CheckError(err)
 
 	for  {
-		conn, err := peer.ListenerTracker.Accept()
+		conn, err := peer.ListenerTracker.AcceptTCP()
 		fmt.Println("[ListenTracker] Accepted connection from tracker...")
 		if err != nil {
 			fmt.Println("Error while accepting connection from tracker, continuing...")
@@ -80,7 +87,7 @@ func (peer Peer) ListenTracker() {
 	}
 }
 
-func handleTracker(conn net.Conn) {
+func handleTracker(conn *net.TCPConn) {
 	defer conn.Close()
 	var tmpReader = IO.Reader{conn}
 	var tmpWriter = IO.Writer{conn}
@@ -97,12 +104,27 @@ func handleTracker(conn net.Conn) {
 	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
 	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
-	tmpWriter.Write("192.168.0.19")
+	tmpWriter.Write("10.0.155.169")
 }
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
 	// Hardkodovano da hocu download opciju
 	trackerWriter.Write("d")
+
+	//ovde ubacujemo dodatni read/write gde meni treker salje listu fajlova i odalte ja sa
+	//mojim rootHashom uzimam koliko ima chunkova fajl
+
+	//sada to hardkodujemo
+
+	numOfChunks := 1
+	numOfDownloadedChunks := 0
+
+	// STATUS 0 = NIJE SKINUT : STATUS 1 = TRENUTNO SE SKIDA : STATUS 2 = SKINUT
+	chunskStatuses := make([]int, numOfChunks)
+
+	for i:=0 ; i < numOfChunks ;i++ {
+		chunskStatuses[i] = 0
+	}
 
 	// Treker trazi root hash i public key, tj DownloadRequestKey
 	msg := trackerReader.Read()
@@ -118,6 +140,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	trackerWriter.Write(string(jsonReq))
 
 	// Poruka sa objektom kome sve treba da se javim
+	//
 	msg = trackerReader.Read()
 
 	completedReq := Requests.WrappedRequest{}
@@ -131,13 +154,37 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	downloadWG.Add(len(list))
 
 	// Napravi fajl, i fji posalji fd
-	f, err := os.Create("/home/antic/Desktop/probaSlika.jpg")
-	CheckError(err)
-	for i := 0; i < len(list); i++  {
-		// ovde ce da se salje i pokazivac na niz koji sadrzi da li je part validan, tu ce biti resen problem ako neko odustane
+	f, err := os.Create("/home/andrija/Desktop/probaSlika.jpg")
 
-		go peer.connectToPeer(list[i], &downloadWG, f, 5)
+	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
+
+	tmpSeeder := 0
+
+	var mutex = &sync.Mutex{}
+
+	for i := 0; i<numOfChunks;i++ {
+
+		if numOfDownloadedChunks == numOfChunks {
+			break
+		}
+
+		if chunskStatuses[i] == 0 {
+
+			// Da se proveri da li se niz salje po referenci tj apdejutuje u funkciji
+			chunskStatuses[i] = 1
+			go peer.connectToPeer(list[tmpSeeder], &downloadWG, f, i, chunskStatuses, mutex, &numOfDownloadedChunks)
+		}
+
+		tmpSeeder = (tmpSeeder + 1) % len(list)
 	}
+
+
+	CheckError(err)
+	//for i := 0; i < len(list); i++  {
+	//	// ovde ce da se salje i pokazivac na niz koji sadrzi da li je part validan, tu ce biti resen problem ako neko odustane
+	//
+	//	go peer.connectToPeer(list[i], &downloadWG, f, 5)
+	//}
 
 	downloadWG.Wait()
 }
@@ -168,9 +215,16 @@ func handlePeer(conn *net.TCPConn) {
 	var tmpReader= IO.Reader{conn}
 	var tmpWriter= IO.Writer{conn}
 
-	rootHash := tmpReader.Read()
+	//rootHash := tmpReader.Read()
 
-	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
+	//fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
+
+	msgFromPeer := tmpReader.Read()
+
+	msg := MsgToNode{}
+	err := json.Unmarshal([]byte(msgFromPeer), &msg)
+
+	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", msg.RootHash)
 
 	f, err := os.Open("misc/probaSlika.jpg")
 	CheckError(err)
@@ -182,7 +236,7 @@ func handlePeer(conn *net.TCPConn) {
 	tmpWriter.WriteFile("misc/probaSlika.jpg", 0, fInfo.Size())
 }
 
-func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, numOfPart int) {
+func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, numOfPart int, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int) {
 	defer group.Done()
 
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
@@ -197,12 +251,28 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 	tmpWriter := IO.Writer{conn}
 
 	// Hardkodovan root hash fajla koji hocu
-	tmpWriter.Write("zorka")
+
+	msg := MsgToNode{"zorka", numOfPart}
+
+	msgForSend, err := json.Marshal(msg)
+	CheckError(err)
+
+	tmpWriter.Write(string(msgForSend))
+
 
 	partBytes, size := tmpReader.ReadFile()
 
+	chunkStatuses[numOfPart] = 2
 	// Ovde mora da se zakljuca fajl pre pisanja
-	//_, err = f.WriteAt(partBytes[:size], 0)
+
+
+	mutex.Lock()
+
+	_, err = f.WriteAt(partBytes[:size], 0)
+
+	*numOfDownloaded++
+
+	mutex.Unlock()
 
 	fmt.Println(len(partBytes[:size]))
 

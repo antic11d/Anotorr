@@ -4,6 +4,8 @@ import (
 	"../File"
 	"../Requests"
 	"../IO"
+	"sync"
+
 	//"container/list"
 	"encoding/json"
 	"fmt"
@@ -15,6 +17,7 @@ type Tracker struct {
 	Addr *net.TCPAddr
 	Map map[string]File.File
 	DownloadRequests map[Requests.DownloadRequestKey] *Requests.DownloadRequest
+	ListOfPeers []string
 }
 
 
@@ -60,50 +63,55 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
-	peerAddr, err := net.ResolveTCPAddr("tcp", "10.0.155.169:9091")
+	var group sync.WaitGroup
+	var mutex sync.Mutex
+	for i, peer := range tracker.ListOfPeers {
+		group.Add(1)
+		go tracker.contactPeer(peer, i, &requestFromPeer, &group, &mutex)
+	}
+
+	group.Wait()
+
+	// ovo da se desi tek kad odblokira wg
+	*tracker.DownloadRequests[requestFromPeer].Served = 1
+
+	msgFinal, err := json.Marshal(Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]})
+	CheckError(err)
+
+	fmt.Println("[HandleDownload] msgFinal:" + string(msgFinal))
+	fmt.Printf("%+v \n", tracker.DownloadRequests[requestFromPeer].CryptedIPs)
+	writer.Write(string(msgFinal))
+}
+
+func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Requests.DownloadRequestKey, group *sync.WaitGroup, mutex *sync.Mutex)  {
+	defer group.Done()
+	peerAddr, err := net.ResolveTCPAddr("tcp", pIP+":9091")
+	CheckError(err)
+
 	tmpConn, err := net.DialTCP("tcp", nil, peerAddr) // 9091 hardkodovano jer tamo slusa peer
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}
 	tmpWriter := IO.Writer{tmpConn}
 
-	wrappedObject := Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]}
+	wrappedObject := Requests.WrappedRequest{requestFromPeer, tracker.DownloadRequests[*requestFromPeer]}
 
 	tmpMsg, err := json.Marshal(wrappedObject)
 	CheckError(err)
 
-	fmt.Printf("[HandleDownload] Poslao %+v, objekat: %+v\n", tmpWriter.Conn.RemoteAddr(), wrappedObject)
+	fmt.Printf("[HandleDownload] %d-tom iz liste Poslao %+v, objekat: %+v\n", tID, tmpWriter.Conn.RemoteAddr(), wrappedObject)
 	tmpWriter.Write(string(tmpMsg))
 
-	// Dobijem ip od osobe koja kaze da ima fajl
-	// Ovde ce IP biti kodiran normalno
 	peerIP := tmpReader.Read()
 	fmt.Println("[HandleDownload] dobio ip:" + peerIP + " od peera: " + tmpReader.Conn.RemoteAddr().String())
 
-	// Dodajemo ga u listu koju treba poslati onome ko je trazio request
-	// Ovde ce morati i sinhronizacija, da se zakljuca mapa
-	fmt.Printf("[HandleDownload] Dodajem kriptovani IP u listu...\n")
-	//tracker.DownloadRequests[requestFromPeer].CryptedIPs.PushBack(peerIP)
-	tracker.DownloadRequests[requestFromPeer].CryptedIPs =
-					append(tracker.DownloadRequests[requestFromPeer].CryptedIPs, peerIP)
+	fmt.Printf("[HandleDownload] Dodajem kriptovani IP u listu koju cu da posaljem kad se napuni...\n")
 
-	// Nakon sto se "napuni" lista kriptovanih, posalji onome ko je trazio ceo objekat
-	fmt.Printf("[HandleDownload] Objekat koji treba poslati peer-u da moze da se javi kome treba itd...\nKey: %+v, duzina liste: %+v\n",
-		tracker.DownloadRequests[requestFromPeer], len(tracker.DownloadRequests[requestFromPeer].CryptedIPs))
-
-	// sto ne moze???
-	//served *int := 1
-	*tracker.DownloadRequests[requestFromPeer].Served = 1
-
-	fmt.Println("Ovo je served kod nas\n", tracker.DownloadRequests[requestFromPeer].Served)
-
-	msgFinal, err := json.Marshal(Requests.WrappedRequest{&requestFromPeer, tracker.DownloadRequests[requestFromPeer]})
-	CheckError(err)
-
-	// Lista prazna???
-	fmt.Println("[HandleDownload] msgFinal:" + string(msgFinal))
-	fmt.Printf("%+v \n", tracker.DownloadRequests[requestFromPeer].CryptedIPs)
-	writer.Write(string(msgFinal))
+	// ovde sinhronizuj tredove
+	mutex.Lock()
+	tracker.DownloadRequests[*requestFromPeer].CryptedIPs =
+		append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs, peerIP)
+	mutex.Unlock()
 }
 
 func (tracker Tracker) HandleUpload(conn net.Conn) {

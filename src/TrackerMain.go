@@ -6,12 +6,14 @@ import (
 	"./structs/Tracker"
 	"fmt"
 	"net"
+	"strings"
 )
 
 var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9090")
 var tracker = Tracker.Tracker{tcpAddr,
 							make(map[string]File.File),
 				make(map[Requests.DownloadRequestKey]*Requests.DownloadRequest),
+				make([]string, 0),
 }
 
 func main() {
@@ -26,6 +28,12 @@ func main() {
 
 	for {
 		conn, err := listener.AcceptTCP()
+		fmt.Println("[TrackerMain] Got call from", strings.Split(conn.RemoteAddr().String(), ":")[0])
+
+		//tracker.ListOfPeers = append(tracker.ListOfPeers, strings.Split(conn.RemoteAddr().String(), ":")[0])
+
+		tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.151.148")
+		tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.151.148")
 
 		if err != nil {
 			fmt.Println("Error while accepting. Continuing...")

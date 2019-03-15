@@ -40,8 +40,8 @@ func (r Reader) ReadFile() ([]byte, int64) {
 		n, err := r.Conn.Read(buff)
 		CheckError(err)
 
-		_, err = r.Conn.Write([]byte("next"))
-		CheckError(err)
+		//_, err = r.Conn.Write([]byte("next"))
+		//CheckError(err)
 
 		fmt.Printf("[ReadFile] %+v-ti read Od %+v sam dobio bajtove: %+v\n", i, r.Conn.RemoteAddr(), n)
 
