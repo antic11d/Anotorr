@@ -4,6 +4,8 @@ import (
 	"./structs/IO"
 	"./structs/Node"
 	"fmt"
+	"net"
+
 	//"net"
 )
 
@@ -16,24 +18,24 @@ func main() {
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
 	//Javljam se trekeru. Hardkodovan localhost
-	//tAddr, err := net.ResolveTCPAddr("tcp", "127.0.0.1:9090")
-	//IO.CheckError(err)
-	//conn, err := net.DialTCP("tcp",nil, tAddr)
-	//IO.CheckError(err)
+	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.105:9090")
+	IO.CheckError(err)
+	conn, err := net.DialTCP("tcp",nil, tAddr)
+	IO.CheckError(err)
 	//conn.Close()
-	//Node.CheckError(err)
-	//
-	//self.ReqConn = conn
-	//
-	//// Citac i pisac otvoreni ka trekeru za postavjanje requestova
-	//trackerReader = IO.Reader{self.ReqConn}
-	//trackerWriter = IO.Writer{self.ReqConn}
-	//
-	//// Poruka predstavljanja trekera, choose option itd...
-	//msg := trackerReader.Read()
-	//fmt.Println(msg)
-	//
-	//self.RequestDownload(trackerWriter, trackerReader)
+	Node.CheckError(err)
+
+	self.ReqConn = conn
+
+	// Citac i pisac otvoreni ka trekeru za postavjanje requestova
+	trackerReader = IO.Reader{self.ReqConn}
+	trackerWriter = IO.Writer{self.ReqConn}
+
+	// Poruka predstavljanja trekera, choose option itd...
+	msg := trackerReader.Read()
+	fmt.Println(msg)
+
+	self.RequestDownload(trackerWriter, trackerReader)
 
 	fmt.Println("About to listen on port for tracker info...")
 
