@@ -21,7 +21,7 @@ func main() {
 	var size int64 = 4391844
 	var chunks int64 = 5
 	var chunkSize int64 = 1000000
-	tracker.Map["zorka"] = &File.File{"Zorica Brunclik - Kada bi me pitali.mp3", &size, &chunks, &chunkSize}
+	tracker.Map["zorka"] = &File.File{"zorka.mp3", &size, &chunks, &chunkSize}
 	//tracker.Map["zvorka"] = &File.File{"Zvorinka Milosevic", 100, 10, 123}
 
 	listener, err := net.ListenTCP("tcp", tracker.Addr)

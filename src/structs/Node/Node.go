@@ -69,7 +69,7 @@ func InitializeNode() (p *Peer){
 	var chunks int64 = 5
 	var chunkSize int64 = 1000000
 
-	p.MyFiles["zorka"] = File.File{"Zorica Brunclik - Kada bi me pitali.mp3", &size, &chunks, &chunkSize}
+	p.MyFiles["zorka"] = File.File{"zorka.mp3", &size, &chunks, &chunkSize}
 	return p
 
 }
@@ -120,8 +120,6 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 	//ovde ubacujemo dodatni read/write gde meni treker salje listu fajlova i odalte ja sa
 	//mojim rootHashom uzimam koliko ima chunkova fajl
-
-	//sada to hardkodujemo
 
 	// STATUS 0 = NIJE SKINUT : STATUS 1 = TRENUTNO SE SKIDA : STATUS 2 = SKINUT
 	// Treker trazi root hash i public key, tj DownloadRequestKey

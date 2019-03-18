@@ -27,7 +27,7 @@ func calcSize(chunkNum int64, chunkSize int64, fileSize int64) int64 {
 }
 
 func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, fileSize int64){
-	f, err := os.Open(filename)
+	f, err := os.Open("misc/"+filename)
 	defer f.Close()
 	CheckError(err)
 
