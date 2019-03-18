@@ -17,14 +17,27 @@ func (w Writer) Write(msg string) {
 		panic(err)
 	}
 }
-func (w Writer) WriteFile(filename string, offset int64, partSize int64){
+
+func calcSize(chunkNum int64, chunkSize int64, fileSize int64) int64 {
+	if chunkNum * chunkSize + chunkSize > fileSize {
+		return fileSize % chunkSize
+	}
+
+	return chunkSize
+}
+
+func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, fileSize int64){
 	f, err := os.Open(filename)
 	defer f.Close()
-	CheckError(err);
-	_,err = f.Seek(partSize*offset,0)
 	CheckError(err)
 
-	tmpPartSize := strconv.FormatInt(partSize,10)
+	sizeForSending := calcSize(chunkNum, chunkSize, fileSize)
+
+	_, err = f.Seek(chunkSize*chunkNum,0)
+	CheckError(err)
+
+	// ne chunksize nego ono sto mi sracunamo
+	tmpPartSize := strconv.FormatInt(sizeForSending,10)
 
 	CheckError(err)
 
@@ -34,25 +47,19 @@ func (w Writer) WriteFile(filename string, offset int64, partSize int64){
 	// Ovde citam OK da je stigla velicina fajla
 	tmpBuffer := make([]byte, 3)
 	_, err = w.Conn.Read(tmpBuffer)
-	fmt.Println()
 	CheckError(err)
 
-	fmt.Printf("[WriteFile] tmpbuffer pre iscitavanja fajla: %+v\n",tmpBuffer)
-
-	//msg := make([]byte, 5)
 	tmpBuffer = make([]byte, 256)
 	var bytesSent int64 = 0
 
-	for bytesSent < partSize {
-		if partSize - bytesSent < 256 {
-			tmpBuffer = make([]byte,partSize - bytesSent)
+	for bytesSent < sizeForSending {
+		if sizeForSending - bytesSent < 256 {
+			tmpBuffer = make([]byte, sizeForSending - bytesSent)
 		}
 		bytesRead, err := f.Read(tmpBuffer)
 
 		n, err := w.Conn.Write(tmpBuffer[:bytesRead])
 		CheckError(err)
-
-		//_, err = w.Conn.Read(msg)
 
 		bytesSent += int64(n)
 

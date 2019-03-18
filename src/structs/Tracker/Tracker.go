@@ -15,7 +15,7 @@ import (
 
 type Tracker struct {
 	Addr *net.TCPAddr
-	Map map[string]File.File
+	Map map[string] *File.File
 	DownloadRequests map[Requests.DownloadRequestKey] *Requests.DownloadRequest
 	ListOfPeers []string
 }
@@ -37,7 +37,7 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	if option == "d" {
 		tracker.HandleDownload(reader, writer)
 	} else if option == "u" {
-		tracker.HandleUpload(conn)
+		//tracker.HandleUpload(conn)
 	} else {
 		writer.Write("Choose a valid option")
 	}
@@ -49,6 +49,8 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	request := reader.Read()
 
+
+
 	requestFromPeer := Requests.DownloadRequestKey{}
 
 	err := json.Unmarshal([]byte(request), &requestFromPeer)
@@ -56,12 +58,19 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	fmt.Printf("Got request: %+v from %+v\n", requestFromPeer, reader.Conn.RemoteAddr())
 
+	var fInfo *File.File
+
+	fInfo = tracker.Map[requestFromPeer.RootHash]
+
+	fMarshall, err := json.Marshal(fInfo)
+
+	writer.Write(string(fMarshall))
+
 	// Hardkodovano maksimalna velicina liste 100
 	var helpInt int
 	helpInt = 0
 	tracker.DownloadRequests[requestFromPeer] = &Requests.DownloadRequest{make([]string, 0), &helpInt}
 
-	// Ovo ce da ide petljom, prodjem kroz sve u mrezi i svakome se javi da im kazem da neko hoce da skida odredjeni fajl
 	// Javljam se svima osim onome ko mi je trazio request!!!!
 	var group sync.WaitGroup
 	var mutex sync.Mutex
@@ -113,7 +122,7 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 		append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs, peerIP)
 	mutex.Unlock()
 }
-
+/*
 func (tracker Tracker) HandleUpload(conn net.Conn) {
 
 	conn.Write([]byte("Give me a info of file you want to upload\n"))
@@ -127,10 +136,10 @@ func (tracker Tracker) HandleUpload(conn net.Conn) {
 
 	CheckError(err)
 
-	rootHash := string(recvBuff[:bytesRead])
+	//rootHash := string(recvBuff[:bytesRead])
 
-	tracker.Map[rootHash] = File.File{"Uploaded", 100, 10}
-}
+	//tracker.Map[rootHash] = File.File{"Uploaded", 100, 10}
+}*/
 
 
 func CheckError(err error) {
