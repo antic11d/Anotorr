@@ -32,8 +32,8 @@ func main() {
 
 		//tracker.ListOfPeers = append(tracker.ListOfPeers, strings.Split(conn.RemoteAddr().String(), ":")[0])
 
-		tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.151.148")
-		tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.151.148")
+		tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.162.98")
+		//tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.151.148")
 
 		if err != nil {
 			fmt.Println("Error while accepting. Continuing...")

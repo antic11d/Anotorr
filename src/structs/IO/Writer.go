@@ -34,13 +34,10 @@ func (w Writer) WriteFile(filename string, offset int64, partSize int64){
 	// Ovde citam OK da je stigla velicina fajla
 	tmpBuffer := make([]byte, 3)
 	_, err = w.Conn.Read(tmpBuffer)
-	fmt.Println()
+
 	CheckError(err)
 
-	fmt.Printf("[WriteFile] tmpbuffer pre iscitavanja fajla: %+v\n",tmpBuffer)
-
-	msg := make([]byte, 5)
-	tmpBuffer = make([]byte, 256)
+	tmpBuffer = make([]byte, 1024)
 	var bytesSent int64 = 0
 
 	for bytesSent < partSize {
@@ -48,8 +45,6 @@ func (w Writer) WriteFile(filename string, offset int64, partSize int64){
 
 		n, err := w.Conn.Write(tmpBuffer[:bytesRead])
 		CheckError(err)
-
-		_, err = w.Conn.Read(msg)
 
 		bytesSent += int64(n)
 	}

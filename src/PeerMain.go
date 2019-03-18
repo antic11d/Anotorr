@@ -18,7 +18,7 @@ func main() {
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
 	//Javljam se trekeru. Hardkodovan localhost
-	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.105:9090")
+	tAddr, err := net.ResolveTCPAddr("tcp", "10.0.151.148:9090")
 	IO.CheckError(err)
 	conn, err := net.DialTCP("tcp",nil, tAddr)
 	IO.CheckError(err)

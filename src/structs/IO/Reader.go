@@ -20,6 +20,15 @@ func (r Reader) Read() string  {
 	return string(recvBuff[:bytesRead])
 }
 
+func appendBuffer(dest []byte, src []byte, offset int, length int) []byte {
+	finLen := length + offset
+	for i := offset; i < finLen; i++ {
+		dest[i] = src[i-offset]
+	}
+
+	return dest
+}
+
 func (r Reader) ReadFile() ([]byte, int64) {
 	partSize := r.Read()
 	r.Conn.Write([]byte("ok"))
@@ -27,8 +36,8 @@ func (r Reader) ReadFile() ([]byte, int64) {
 	pSize, err := strconv.Atoi(partSize)
 	CheckError(err)
 
-	buff := make([]byte, 256)
-	finalBuff := make([]byte, 0)
+	buff := make([]byte, 1024)
+	finalBuff := make([]byte, pSize)
 
 	CheckError(err)
 
@@ -40,13 +49,10 @@ func (r Reader) ReadFile() ([]byte, int64) {
 		n, err := r.Conn.Read(buff)
 		CheckError(err)
 
+		//fmt.Printf("[ReadFile] %+v-ti read Od %+v sam dobio bajtove: %+v\n", i, r.Conn.RemoteAddr(), n)
 
-		fmt.Printf("[ReadFile] %+v-ti read Od %+v sam dobio bajtove: %+v\n", i, r.Conn.RemoteAddr(), n)
+		finalBuff = appendBuffer(finalBuff, buff[:n], int(sum), n)
 
-		finalBuff = append(finalBuff, buff[:n]...)
-
-
-		_, err = r.Conn.Write([]byte("next"))
 		CheckError(err)
 
 		sum += int64(n)
@@ -58,7 +64,5 @@ func (r Reader) ReadFile() ([]byte, int64) {
 		CheckError(err)
 	}
 
-
-	//rBuff := finalBuff[:sum]
 	return finalBuff, sum
 }

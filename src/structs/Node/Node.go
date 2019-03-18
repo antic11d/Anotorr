@@ -104,7 +104,7 @@ func handleTracker(conn *net.TCPConn) {
 	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
 	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
-	tmpWriter.Write("192.168.0.110")
+	tmpWriter.Write("10.0.162.98")
 }
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
@@ -154,7 +154,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	downloadWG.Add(len(list))
 
 	// Napravi fajl, i fji posalji fd
-	f, err := os.Create("/home/andrija/Desktop/probaSlika.jpg")
+	f, err := os.Create("/home/antic/Desktop/probaSlika.jpg")
 
 	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
 
@@ -283,7 +283,5 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 	fmt.Printf("%+v\n", partBytes[:size])
 
 	CheckError(err)
-
-
 }
 
