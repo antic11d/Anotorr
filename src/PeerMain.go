@@ -41,9 +41,9 @@ func main() {
 
 	self.WaitGroup.Add(2)
 
-	go self.ListenTracker()
+		go self.ListenTracker()
 
-	go self.ListenPeer()
+		go self.ListenPeer()
 
 	self.WaitGroup.Wait()
 }

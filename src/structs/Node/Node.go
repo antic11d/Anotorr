@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strings"
 	"sync"
 )
 
@@ -104,7 +105,7 @@ func handleTracker(conn *net.TCPConn) {
 	//fmt.Printf("[handleTracker] lista: %+v\n", wrappedRequest.Value.CryptedIPs.Len())
 
 	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
-	tmpWriter.Write("10.0.162.98")
+	tmpWriter.Write(strings.Split(conn.LocalAddr().String(), ":")[0])
 }
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
@@ -116,7 +117,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 	//sada to hardkodujemo
 
-	numOfChunks := 1
+	numOfChunks := 2
 	numOfDownloadedChunks := 0
 
 	// STATUS 0 = NIJE SKINUT : STATUS 1 = TRENUTNO SE SKIDA : STATUS 2 = SKINUT
@@ -151,41 +152,30 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 	var downloadWG sync.WaitGroup
 	var list = completedReq.Value.CryptedIPs
-	downloadWG.Add(len(list))
 
-	// Napravi fajl, i fji posalji fd
-	f, err := os.Create("/home/antic/Desktop/probaSlika.jpg")
+
+	f, err := os.Create("/home/antic/Desktop/zorka.mp3")
 
 	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
-
 	tmpSeeder := 0
 
 	var mutex = &sync.Mutex{}
 
-	for i := 0; i<numOfChunks;i++ {
-
+	for i := 0; i < numOfChunks; i++ {
 		if numOfDownloadedChunks == numOfChunks {
 			break
 		}
 
 		if chunskStatuses[i] == 0 {
-
 			// Da se proveri da li se niz salje po referenci tj apdejutuje u funkciji
 			chunskStatuses[i] = 1
+			downloadWG.Add(1)
 			go peer.connectToPeer(list[tmpSeeder], &downloadWG, f, i, chunskStatuses, mutex, &numOfDownloadedChunks)
 		}
-
 		tmpSeeder = (tmpSeeder + 1) % len(list)
 	}
 
-
 	CheckError(err)
-	//for i := 0; i < len(list); i++  {
-	//	// ovde ce da se salje i pokazivac na niz koji sadrzi da li je part validan, tu ce biti resen problem ako neko odustane
-	//
-	//	go peer.connectToPeer(list[i], &downloadWG, f, 5)
-	//}
-
 	downloadWG.Wait()
 }
 
@@ -215,10 +205,6 @@ func handlePeer(conn *net.TCPConn) {
 	var tmpReader= IO.Reader{conn}
 	var tmpWriter= IO.Writer{conn}
 
-	//rootHash := tmpReader.Read()
-
-	//fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", rootHash)
-
 	msgFromPeer := tmpReader.Read()
 
 	msg := MsgToNode{}
@@ -237,13 +223,13 @@ func handlePeer(conn *net.TCPConn) {
 }
 
 func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, numOfPart int, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int) {
-	defer group.Done()
+	//defer group.Done()
 
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
-	//conn, err := net.Dial("tcp", IP + ":9092")
+
 	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9092")
-	//lAddr, err := net.ResolveTCPAddr("tcp", )
+
 	conn, err := net.DialTCP("tcp", nil, rAddr)
 	CheckError(err)
 
@@ -259,16 +245,14 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 
 	tmpWriter.Write(string(msgForSend))
 
-
 	partBytes, size := tmpReader.ReadFile()
 
+	fmt.Printf("wg: %+v\n", group)
 
 	// Ovde mora da se zakljuca fajl pre pisanja
-
-
 	mutex.Lock()
 
-	_, err = f.WriteAt(partBytes[:size], 0)
+	_, err = f.WriteAt(partBytes[:size], int64(numOfPart) * size)
 
 	chunkStatuses[numOfPart] = 2
 
@@ -276,12 +260,8 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 
 	mutex.Unlock()
 
-	fmt.Println(len(partBytes[:size]))
-
-	f.Write(partBytes[:size])
-
-	fmt.Printf("%+v\n", partBytes[:size])
-
 	CheckError(err)
+
+	group.Done()
 }
 
