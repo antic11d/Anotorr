@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log"
+	"math"
 	"os"
 )
 
@@ -14,7 +15,7 @@ type Merkle struct {
 }
 
 
-func (m Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) {
+func (m *Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) {
 
 
 	leaves := make([][]byte, numOfChunks)
@@ -32,7 +33,7 @@ func (m Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) 
 	fmt.Println(fStat.Size())
 
 
-	for i:=0; i<int(numOfChunks) ; i++ {
+	for i:=0; i<int(numOfChunks) ;i++ {
 
 		buffer := make([]byte, chunkSize)
 
@@ -51,15 +52,11 @@ func (m Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) 
 			log.Fatal(err)
 		}
 
-		//fmt.Printf("Buffer : %+v\n", buffer)
-
 		leaves[i] = buffer[:bytesRead]
 
-		//fmt.Printf("Leave : %+v\n", leaves[i])
 
 	}
 
-	//m.Tree = make([]string, math.Pow(2, float64(numOfChunks)) - 1)
 	hasher := md5.New()
 
 	hashedLeaves := make([]string, len(leaves))
@@ -79,7 +76,7 @@ func (m Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) 
 
 	for ; ;  {
 
-		for i:=0;i<len(*currentLevel) ;i = i + 2 {
+		for i:=0;i<len(*currentLevel);i=i+2 {
 
 			if i+1 < len(*currentLevel) {
 				tmpStr := (*currentLevel)[i] + (*currentLevel)[i+1] + string(i)
@@ -105,6 +102,48 @@ func (m Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64) 
 
 	}
 
-	fmt.Printf("Merkle tree : %+v\n", m)
+	//fmt.Printf("Merkle tree : %+v\n", m)
 
 }
+
+func (m Merkle) CreateProof(leaf int) ([]string) {
+
+	currentLevel := 0
+
+	rootLevel := len(m.Tree)
+
+	proof := make([]string, 0)
+
+	proof = append(proof, m.Tree[currentLevel][leaf])
+
+	i := leaf
+
+	for currentLevel := 0;currentLevel<rootLevel-1;currentLevel++  {
+
+		if i % 2 == 1 {
+			proof = append(proof, m.Tree[currentLevel][i-1])
+		} else if i+1 < len(m.Tree[currentLevel]) {
+			proof = append(proof, m.Tree[currentLevel][i+1])
+		} else {
+			proof = append(proof, m.Tree[currentLevel][i])
+		}
+
+		p := math.Trunc(float64(i/2))
+		i = int(p)
+	}
+
+	return proof
+
+
+}
+
+//if (i % 2 === 1) {
+//proof.push(`0x${levels[currentLevel][i - 1]}`);
+//} else if ((i + 1) < levels[currentLevel].length) {
+//proof.push(`0x${levels[currentLevel][i + 1]}`);
+//} else {
+//proof.push(`0x${levels[currentLevel][i]}`);
+//}
+//
+//currentLevel += 1;
+//i = Math.trunc(i / 2);

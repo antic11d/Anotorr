@@ -23,6 +23,10 @@ func main() {
 
 	m.CreateTree("misc/zorka.mp3", 5, 1000000)
 
+	//fmt.Printf("%+v", m)
+
+	m.CreateProof(1)
+
 	var self = Node.InitializeNode()
 
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
