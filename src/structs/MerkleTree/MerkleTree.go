@@ -30,7 +30,6 @@ func (m *Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64)
 		log.Fatal(err)
 	}
 
-	fmt.Println(fStat.Size())
 
 
 	for i:=0; i<int(numOfChunks) ;i++ {
@@ -43,7 +42,6 @@ func (m *Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64)
 
 		}
 
-		fmt.Println(len(buffer))
 
 		bytesRead, err := file.Read(buffer)
 
@@ -102,7 +100,6 @@ func (m *Merkle) CreateTree(filename string, numOfChunks int64, chunkSize int64)
 
 	}
 
-	//fmt.Printf("Merkle tree : %+v\n", m)
 
 }
 
@@ -136,14 +133,3 @@ func (m Merkle) CreateProof(leaf int) ([]string) {
 
 
 }
-
-//if (i % 2 === 1) {
-//proof.push(`0x${levels[currentLevel][i - 1]}`);
-//} else if ((i + 1) < levels[currentLevel].length) {
-//proof.push(`0x${levels[currentLevel][i + 1]}`);
-//} else {
-//proof.push(`0x${levels[currentLevel][i]}`);
-//}
-//
-//currentLevel += 1;
-//i = Math.trunc(i / 2);
