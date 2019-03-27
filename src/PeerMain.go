@@ -3,6 +3,8 @@ package main
 import (
 	"./structs/IO"
 	"./structs/Node"
+	"./structs/MerkleTree"
+	//"./structs/MerkleTree"
 	"fmt"
 	"net"
 
@@ -13,6 +15,14 @@ var trackerReader = IO.Reader{nil}
 var trackerWriter = IO.Writer{nil}
 
 func main() {
+
+
+
+
+	m := MerkleTree.Merkle{make([][] string, 0)}
+
+	m.CreateTree("misc/zorka.mp3", 5, 1000000)
+
 	var self = Node.InitializeNode()
 
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
@@ -35,7 +45,7 @@ func main() {
 	msg := trackerReader.Read()
 	fmt.Println(msg)
 
-	self.RequestDownload(trackerWriter, trackerReader)
+	//self.RequestDownload(trackerWriter, trackerReader)
 
 	fmt.Println("About to listen on port for tracker info...")
 

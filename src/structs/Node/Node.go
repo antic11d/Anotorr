@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"../File"
+	"../MerkleTree"
 )
 
 type Peer struct {
@@ -26,6 +27,7 @@ type Peer struct {
 	ReqConn *net.TCPConn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
 	WaitGroup sync.WaitGroup
 	MyFiles map[string] File.File
+	MyTrees map[string] MerkleTree.Merkle //Za svaki root hash ja cuvam merkle stablo za njega
 }
 
 type MsgToNode struct {
