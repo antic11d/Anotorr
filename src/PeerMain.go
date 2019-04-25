@@ -49,11 +49,12 @@ func main() {
 	//
 	//fmt.Println("About to listen on port for tracker info...")
 	//
-	//self.WaitGroup.Add(2)
+	self.WaitGroup.Add(2)
 	//
-	//	go self.ListenTracker()
+		go self.ListenTracker()
 	//
-	//	go self.ListenPeer()
+		go self.ListenPeer()
+
 	//
-	//self.WaitGroup.Wait()
+	self.WaitGroup.Wait()
 }

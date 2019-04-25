@@ -9,6 +9,9 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	_ "github.com/prestonTao/upnp"
+	"gitlab.com/NebulousLabs/go-upnp"
+	_ "gitlab.com/NebulousLabs/go-upnp"
 	"net"
 	"os"
 	"path/filepath"
@@ -18,7 +21,7 @@ import (
 
 type Peer struct {
 	ID string
-	IP net.IP
+	IP string
 	PrivateKey *rsa.PrivateKey
 	RootHashes []string
 	TrackerListenAddr *net.TCPAddr
@@ -46,19 +49,27 @@ func CheckError(err error) {
 	}
 }
 
-func getMyIP() (net.IP) {
+func getMyIP() (string) {
 	//Ovde ce da se implementira UPNP
 
-	host, _ := os.Hostname()
-	addrs, _ := net.LookupIP(host)
-	for _, addr := range addrs {
-		if ipv4 := addr.To4(); ipv4 != nil {
-			fmt.Println("[getMyIP]IPv4: ", ipv4)
-			return ipv4
-		}
-	}
+	fmt.Println("In get my ip...")
 
-	return nil
+	d, err := upnp.Discover()
+	CheckError(err)
+
+	// discover external IP
+	ip, err := d.ExternalIP()
+	CheckError(err)
+	fmt.Println("Your external IP is:", ip)
+
+	// forward a port
+	err = d.Forward(9092, "upnp test")
+	CheckError(err)
+
+	err = d.Forward(9091, "upnp test")
+	CheckError(err)
+
+	return ip
 }
 
 func InitializeNode() (p *Peer){
@@ -69,8 +80,9 @@ func InitializeNode() (p *Peer){
 
 	fmt.Println(separator+"Hello node :)\nWhat is your name?"+separator)
 	var name string
-	_, err = fmt.Scanf("%s", &name)
+	//_, err = fmt.Scanf("%s", &name)
 	CheckError(err)
+	name = "Random_ime"
 
 	var wg sync.WaitGroup
 	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:make(map[string]File.File)}
@@ -84,11 +96,12 @@ func InitializeNode() (p *Peer){
 	*/
 	return p
 }
+
 // moja putanja: /home/antic/Desktop/goTorr_files
 func checkFolder() string {
 	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
 	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
-
+	/*
 	fmt.Println(separator+"Give me a path to goTorr_files folder:")
 	fmt.Println("In case you haven't made it type N, make folder and then start app again, thank you!"+separator)
 
@@ -107,7 +120,8 @@ func checkFolder() string {
 		fmt.Println(separator+"All good! Welcome to goTorr community :)"+separator)
 	}
 
-	return path
+	return path*/
+	return "/home/antic/Desktop/goTorr_files"
 }
 
 func (peer Peer) initListOfFiles() {
@@ -259,14 +273,14 @@ func (peer Peer) ListenPeer() {
 	CheckError(err)
 
 	for  {
-		conn, err := peer.ListenerPeer.AcceptTCP()
+		_, err := peer.ListenerPeer.AcceptTCP()
 		fmt.Println("[ListenPeer] Accepted connection from peer...")
 		if err != nil {
 			fmt.Println("Error while accepting connection from peer, continuing...")
 			continue
 		}
 
-		go peer.handlePeer(conn)
+		//go peer.handlePeer(conn)
 	}
 
 }
