@@ -283,7 +283,7 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 
 	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", msg.RootHash)
 
-	f, err := os.Open("misc/"+peer.MyFiles[msg.RootHash].Name)
+	f, err := os.Open(peer.MyFolderPath+"/"+peer.MyFiles[msg.RootHash].Name)
 	CheckError(err)
 	defer f.Close()
 
