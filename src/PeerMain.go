@@ -2,11 +2,9 @@ package main
 
 import (
 	"./structs/IO"
-	"./structs/Node"
 	"./structs/MerkleTree"
-	//"./structs/MerkleTree"
+	"./structs/Node"
 	"fmt"
-	"net"
 
 	//"net"
 )
@@ -15,9 +13,7 @@ var trackerReader = IO.Reader{nil}
 var trackerWriter = IO.Writer{nil}
 
 func main() {
-
-
-
+	//Inicijalizaciju Merkle stabla isto prebaci u InitializeNode()
 
 	m := MerkleTree.Merkle{make([][] string, 0)}
 
@@ -32,32 +28,32 @@ func main() {
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
 	//Javljam se trekeru. Hardkodovan localhost
-	tAddr, err := net.ResolveTCPAddr("tcp", "10.0.151.148:9090")
-	IO.CheckError(err)
-	conn, err := net.DialTCP("tcp",nil, tAddr)
-	IO.CheckError(err)
-	//conn.Close()
-	Node.CheckError(err)
-
-	self.ReqConn = conn
-
-	// Citac i pisac otvoreni ka trekeru za postavjanje requestova
-	trackerReader = IO.Reader{self.ReqConn}
-	trackerWriter = IO.Writer{self.ReqConn}
-
-	// Poruka predstavljanja trekera, choose option itd...
-	msg := trackerReader.Read()
-	fmt.Println(msg)
-
-	//self.RequestDownload(trackerWriter, trackerReader)
-
-	fmt.Println("About to listen on port for tracker info...")
-
-	self.WaitGroup.Add(2)
-
-		go self.ListenTracker()
-
-		go self.ListenPeer()
-
-	self.WaitGroup.Wait()
+	//tAddr, err := net.ResolveTCPAddr("tcp", "10.0.151.148:9090")
+	//IO.CheckError(err)
+	//conn, err := net.DialTCP("tcp",nil, tAddr)
+	//IO.CheckError(err)
+	////conn.Close()
+	//Node.CheckError(err)
+	//
+	//self.ReqConn = conn
+	//
+	//// Citac i pisac otvoreni ka trekeru za postavjanje requestova
+	//trackerReader = IO.Reader{self.ReqConn}
+	//trackerWriter = IO.Writer{self.ReqConn}
+	//
+	//// Poruka predstavljanja trekera, choose option itd...
+	//msg := trackerReader.Read()
+	//fmt.Println(msg)
+	//
+	////self.RequestDownload(trackerWriter, trackerReader)
+	//
+	//fmt.Println("About to listen on port for tracker info...")
+	//
+	//self.WaitGroup.Add(2)
+	//
+	//	go self.ListenTracker()
+	//
+	//	go self.ListenPeer()
+	//
+	//self.WaitGroup.Wait()
 }

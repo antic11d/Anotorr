@@ -1,7 +1,9 @@
 package Node
 
 import (
+	"../File"
 	"../IO"
+	"../MerkleTree"
 	"../Requests"
 	"crypto/rand"
 	"crypto/rsa"
@@ -9,10 +11,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
-	"../File"
-	"../MerkleTree"
 )
 
 type Peer struct {
@@ -26,6 +27,7 @@ type Peer struct {
 	ListenerPeer *net.TCPListener
 	ReqConn *net.TCPConn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
 	WaitGroup sync.WaitGroup
+	MyFolderPath string
 	MyFiles map[string] File.File
 	MyTrees map[string] MerkleTree.Merkle //Za svaki root hash ja cuvam merkle stablo za njega
 }
@@ -34,6 +36,8 @@ type MsgToNode struct {
 	RootHash string
 	ChunkNum int64
 }
+
+var separator = "\n--------------------------------------------\n"
 
 func CheckError(err error) {
 	if err != nil {
@@ -58,22 +62,75 @@ func getMyIP() (net.IP) {
 }
 
 func InitializeNode() (p *Peer){
+	//Inicijalizaciju Merkle stabla isto uradi ovde
 	pk, err := rsa.GenerateKey(rand.Reader, 2048)
 
 	CheckError(err)
 
-	// ID generisati dinamicki!!!
-	// Ovde napraviti mapu svih fajlova koje mozes da sidujes
+	fmt.Println(separator+"Hello node :)\nWhat is your name?"+separator)
+	var name string
+	_, err = fmt.Scanf("%s", &name)
+	CheckError(err)
+
 	var wg sync.WaitGroup
-	p = &Peer{ID:"idPrvi", PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:make(map[string]File.File)}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:make(map[string]File.File)}
 
-	var size int64 = 4391844
-	var chunks int64 = 5
-	var chunkSize int64 = 1000000
-
-	p.MyFiles["zorka"] = File.File{"zorka.mp3", &size, &chunks, &chunkSize}
+	p.initListOfFiles()
+	/*
+	for k, v := range p.MyFiles {
+		fmt.Printf("%+v -> ", k)
+		fmt.Printf("%+v %+v %+v\n", *v.Size, *v.ChunkSize, *v.Chunks)
+	}
+	*/
 	return p
+}
+// moja putanja: /home/antic/Desktop/goTorr_files
+func checkFolder() string {
+	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
+	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
 
+	fmt.Println(separator+"Give me a path to goTorr_files folder:")
+	fmt.Println("In case you haven't made it type N, make folder and then start app again, thank you!"+separator)
+
+	var path string
+	_, err := fmt.Scanf("%s", &path)
+	CheckError(err)
+
+	if path == "N" {
+		os.Exit(1)
+	}
+
+	finfo, err := os.Stat(path)
+	CheckError(err)
+
+	if finfo.IsDir() && finfo.Name() == "goTorr_files" {
+		fmt.Println(separator+"All good! Welcome to goTorr community :)"+separator)
+	}
+
+	return path
+}
+
+func (peer Peer) initListOfFiles() {
+	path := checkFolder()
+
+	peer.MyFolderPath = path
+
+	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() {
+			var fSize = info.Size()
+
+			// Ovde dodati dinamicko deljenje u odnosu na velicinu fajla
+			var chunks int64 = 5
+
+			var chunkSize = fSize / chunks
+
+			//fmt.Printf("%+v -- %+v -- %+v -- %+v\n", info.Name(), fSize, chunks, chunkSize)
+			peer.MyFiles[info.Name()] = File.File{info.Name(), &fSize, &chunks, &chunkSize}
+		}
+
+		return nil
+	})
+	CheckError(err)
 }
 
 // Hardcoded portovi 9091, 9092
