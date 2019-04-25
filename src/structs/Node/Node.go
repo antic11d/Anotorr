@@ -41,6 +41,7 @@ type MsgToNode struct {
 }
 
 var separator = "\n--------------------------------------------\n"
+var FOLDER_PATH = ""
 
 func CheckError(err error) {
 	if err != nil {
@@ -52,7 +53,7 @@ func CheckError(err error) {
 func getMyIP() (string) {
 	//Ovde ce da se implementira UPNP
 
-	fmt.Println("In get my ip...")
+	fmt.Println(separator+"Getting external ip and mapping ports.\nPlease wait for a couple of seconds..."+separator)
 
 	d, err := upnp.Discover()
 	CheckError(err)
@@ -60,7 +61,7 @@ func getMyIP() (string) {
 	// discover external IP
 	ip, err := d.ExternalIP()
 	CheckError(err)
-	fmt.Println("Your external IP is:", ip)
+	fmt.Println(separator+"Your external IP is:" + ip + separator)
 
 	// forward a port
 	err = d.Forward(9092, "upnp test")
@@ -80,20 +81,23 @@ func InitializeNode() (p *Peer){
 
 	fmt.Println(separator+"Hello node :)\nWhat is your name?"+separator)
 	var name string
-	//_, err = fmt.Scanf("%s", &name)
+	_, err = fmt.Scanf("%s", &name)
 	CheckError(err)
-	name = "Random_ime"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:make(map[string]File.File)}
+	//files :=
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:initListOfFiles()}
 
-	p.initListOfFiles()
+	//p.initListOfFiles()
+
+	p.MyFolderPath = FOLDER_PATH
+
 	/*
 	for k, v := range p.MyFiles {
 		fmt.Printf("%+v -> ", k)
 		fmt.Printf("%+v %+v %+v\n", *v.Size, *v.ChunkSize, *v.Chunks)
-	}
-	*/
+	}*/
+
 	return p
 }
 
@@ -101,7 +105,7 @@ func InitializeNode() (p *Peer){
 func checkFolder() string {
 	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
 	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
-	/*
+
 	fmt.Println(separator+"Give me a path to goTorr_files folder:")
 	fmt.Println("In case you haven't made it type N, make folder and then start app again, thank you!"+separator)
 
@@ -120,14 +124,15 @@ func checkFolder() string {
 		fmt.Println(separator+"All good! Welcome to goTorr community :)"+separator)
 	}
 
-	return path*/
-	return "/home/antic/Desktop/goTorr_files"
+	FOLDER_PATH = path
+
+	return path
+	//return "/home/antic/Desktop/goTorr_files"
 }
 
-func (peer Peer) initListOfFiles() {
+func initListOfFiles() map[string] File.File {
+	files := make(map[string]File.File)
 	path := checkFolder()
-
-	peer.MyFolderPath = path
 
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
@@ -139,12 +144,14 @@ func (peer Peer) initListOfFiles() {
 			var chunkSize = fSize / chunks
 
 			//fmt.Printf("%+v -- %+v -- %+v -- %+v\n", info.Name(), fSize, chunks, chunkSize)
-			peer.MyFiles[info.Name()] = File.File{info.Name(), &fSize, &chunks, &chunkSize}
+			files[info.Name()] = File.File{info.Name(), &fSize, &chunks, &chunkSize}
 		}
 
 		return nil
 	})
 	CheckError(err)
+
+	return files
 }
 
 // Hardcoded portovi 9091, 9092
