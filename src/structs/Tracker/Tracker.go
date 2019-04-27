@@ -4,6 +4,7 @@ import (
 	"../File"
 	"../Requests"
 	"../IO"
+	"strconv"
 	"sync"
 
 	//"container/list"
@@ -46,7 +47,7 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 }
 
 func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
-	writer.Write("Give me a root hash of file you want and public key\n")
+	writer.Write(separator+"Give me a root hash of file you want and public key\n"+separator)
 
 	request := reader.Read()
 
@@ -117,8 +118,18 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 
 	// ovde sinhronizuj tredove
 	mutex.Lock()
-	tracker.DownloadRequests[*requestFromPeer].CryptedIPs =
-		append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs, peerIP)
+	// Ne treba da ih dodajem duplo
+	var ind = false
+	for ip := range tracker.DownloadRequests[*requestFromPeer].CryptedIPs {
+		if (strconv.Itoa(ip) == peerIP) {
+			ind = true
+			break
+		}
+	}
+	if (!ind) {
+		tracker.DownloadRequests[*requestFromPeer].CryptedIPs =
+			append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs, peerIP)
+	}
 	mutex.Unlock()
 }
 /*

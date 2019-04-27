@@ -29,20 +29,20 @@ func main() {
 	fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
 	//Javljam se trekeru. Hardkodovan localhost
-	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.1:9090")
+	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.15:9090")
 	Node.CheckError(err)
 	conn, err := net.DialTCP("tcp",nil, tAddr)
 	Node.CheckError(err)
-	////conn.Close()
-	Node.CheckError(err)
-	//
+
+	fmt.Println("Zvao trekera")
+
 	self.ReqConn = conn
-	//
-	//// Citac i pisac otvoreni ka trekeru za postavjanje requestova
+
+	// Citac i pisac otvoreni ka trekeru za postavjanje requestova
 	trackerReader = IO.Reader{self.ReqConn}
 	trackerWriter = IO.Writer{self.ReqConn}
-	//
-	//// Poruka predstavljanja trekera, choose option itd...
+
+	// Poruka predstavljanja trekera, choose option itd...
 	msg := trackerReader.Read()
 	fmt.Println(msg)
 
