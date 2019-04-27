@@ -20,6 +20,7 @@ type Tracker struct {
 	ListOfPeers []string
 }
 
+var separator = "\n================================================\n"
 
 func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	defer conn.Close()
@@ -30,11 +31,11 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	var writer = IO.Writer{conn}
 	var reader = IO.Reader{conn}
 
-	writer.Write("Hello! How are you?\nPlease choose an option(d/u):\n")
+	writer.Write(separator+"Hello! How are you?\nPlease choose an option D - download (currently supported):"+separator)
 
 	var option = reader.Read()
 
-	if option == "d" {
+	if option == "D" {
 		tracker.HandleDownload(reader, writer)
 	} else if option == "u" {
 		//tracker.HandleUpload(conn)
@@ -48,8 +49,6 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	writer.Write("Give me a root hash of file you want and public key\n")
 
 	request := reader.Read()
-
-
 
 	requestFromPeer := Requests.DownloadRequestKey{}
 

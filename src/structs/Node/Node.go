@@ -51,23 +51,21 @@ func CheckError(err error) {
 }
 
 func getMyIP() (string) {
-	//Ovde ce da se implementira UPNP
-
 	fmt.Println(separator+"Getting external ip and mapping ports.\nPlease wait for a couple of seconds..."+separator)
 
 	d, err := upnp.Discover()
 	CheckError(err)
 
-	// discover external IP
+	// Hvatanje externe ip
 	ip, err := d.ExternalIP()
 	CheckError(err)
 	fmt.Println(separator+"Your external IP is:" + ip + separator)
 
-	// forward a port
-	err = d.Forward(9092, "upnp test")
+	// port forwarding
+	err = d.Forward(9092, "upnp goTorr 1")
 	CheckError(err)
 
-	err = d.Forward(9091, "upnp test")
+	err = d.Forward(9091, "upnp goTorr 2")
 	CheckError(err)
 
 	return ip
@@ -87,8 +85,6 @@ func InitializeNode() (p *Peer){
 	var wg sync.WaitGroup
 	//files :=
 	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:initListOfFiles()}
-
-	//p.initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
 
@@ -196,7 +192,8 @@ func handleTracker(conn *net.TCPConn) {
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
 	// Hardkodovano da hocu download opciju
-	trackerWriter.Write("d")
+	trackerWriter.Write("D")
+	//fmt.Println()
 
 	//ovde ubacujemo dodatni read/write gde meni treker salje listu fajlova i odalte ja sa
 	//mojim rootHashom uzimam koliko ima chunkova fajl
