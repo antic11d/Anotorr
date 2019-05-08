@@ -5,6 +5,7 @@ import (
 	"../Requests"
 	"../IO"
 	"strconv"
+	"strings"
 	"sync"
 
 	//"container/list"
@@ -38,15 +39,13 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 
 	if option == "D" {
 		tracker.HandleDownload(reader, writer)
-	} else if option == "u" {
-		//tracker.HandleUpload(conn)
 	} else {
 		writer.Write("Choose a valid option")
 	}
-
 }
 
 func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
+	caller := strings.Split(writer.Conn.RemoteAddr().String(), ":")[0]
 	writer.Write(separator+"Give me a root hash of file you want and public key\n"+separator)
 
 	request := reader.Read()
@@ -75,8 +74,10 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	var group sync.WaitGroup
 	var mutex sync.Mutex
 	for i, peer := range tracker.ListOfPeers {
-		group.Add(1)
-		go tracker.contactPeer(peer, i, &requestFromPeer, &group, &mutex)
+		if peer != caller {
+			group.Add(1)
+			go tracker.contactPeer(peer, i, &requestFromPeer, &group, &mutex)
+		}
 	}
 
 	group.Wait()
@@ -132,25 +133,6 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	}
 	mutex.Unlock()
 }
-/*
-func (tracker Tracker) HandleUpload(conn net.Conn) {
-
-	conn.Write([]byte("Give me a info of file you want to upload\n"))
-
-	//u klijenu cemo da statujemo fajl da bismo poslali
-
-
-	recvBuff := make([]byte, 2048)
-
-	bytesRead, err := conn.Read(recvBuff)
-
-	CheckError(err)
-
-	//rootHash := string(recvBuff[:bytesRead])
-
-	//tracker.Map[rootHash] = File.File{"Uploaded", 100, 10}
-}*/
-
 
 func CheckError(err error) {
 	if err != nil {

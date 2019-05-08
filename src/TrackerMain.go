@@ -11,7 +11,7 @@ import (
 )
 
 var separator = "\n--------------------------------------------\n"
-var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9090")
+var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9095")
 var tracker = Tracker.Tracker{tcpAddr,
 							make(map[string] *File.File),
 				make(map[Requests.DownloadRequestKey]*Requests.DownloadRequest),
@@ -34,7 +34,7 @@ func main() {
 	Tracker.CheckError(err)
 	fmt.Println(separator+"Your external IP is:" + ip + separator)
 
-	err = d.Forward(9090, "upnp goTorr 2")
+	err = d.Forward(9095, "upnp goTorr 2")
 	Tracker.CheckError(err)
 
 	listener, err := net.ListenTCP("tcp", tracker.Addr)
@@ -43,12 +43,15 @@ func main() {
 
 	for {
 		conn, err := listener.AcceptTCP()
-		fmt.Println("[TrackerMain] Got call from", strings.Split(conn.RemoteAddr().String(), ":")[0])
 
-		//tracker.ListOfPeers = append(tracker.ListOfPeers, strings.Split(conn.RemoteAddr().String(), ":")[0])
+		caller := strings.Split(conn.RemoteAddr().String(), ":")[0]
+		fmt.Println("[TrackerMain] Got call from", caller)
+
+		tracker.ListOfPeers = append(tracker.ListOfPeers, caller)
+		fmt.Println("Added peer " + caller)
 
 		//tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.162.98")
-		tracker.ListOfPeers = append(tracker.ListOfPeers, "192.168.1.106")
+		//tracker.ListOfPeers = append(tracker.ListOfPeers, "192.168.1.106")
 		//tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.155.169")
 
 		if err != nil {

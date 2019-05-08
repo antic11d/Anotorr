@@ -81,7 +81,6 @@ func InitializeNode() (p *Peer){
 	CheckError(err)
 
 	var wg sync.WaitGroup
-	//files :=
 	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:initListOfFiles()}
 
 	p.MyFolderPath = FOLDER_PATH
@@ -100,8 +99,8 @@ func checkFolder() string {
 	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
 	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
 
-	fmt.Println(separator+"Give me a path to goTorr_files folder:")
-	fmt.Println("In case you haven't made it type N, make folder and then start app again, thank you!"+separator)
+	fmt.Println(separator+"Give me a path to goTorr_files folder: (format: /absolute/path/to/folder/goTorr_files)")
+	fmt.Println("In case you haven't made it yet type N, mkdir and then start app again, thank you!"+separator)
 
 	var path string
 	_, err := fmt.Scanf("%s", &path)
@@ -148,7 +147,7 @@ func initListOfFiles() map[string] File.File {
 	return files
 }
 
-// Hardcoded portovi 9091, 9092
+//portovi 9091, 9092
 
 // Cekam da mi se javi treker da mi kaze da neko hoce da skida fajl koji ja potencijalno imam
 func (peer Peer) ListenTracker() {
@@ -194,7 +193,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	//ovde ubacujemo dodatni read/write gde meni treker salje listu fajlova i odalte ja sa
 	//mojim rootHashom uzimam koliko ima chunkova fajl
 
-	// STATUS 0 = NIJE SKINUT : STATUS 1 = TRENUTNO SE SKIDA : STATUS 2 = SKINUT
+	// STATUS 0 = NIJE SKINUT, STATUS 1 = TRENUTNO SE SKIDA, STATUS 2 = SKINUT
 	// Treker trazi root hash i public key, tj DownloadRequestKey
 	msg := trackerReader.Read()
 
@@ -223,7 +222,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	chunksStatuses := make([]int, numOfChunks)
 
 	var i int64
-	for i = 0 ; i < numOfChunks ;i++ {
+	for i = 0; i < numOfChunks; i++ {
 		chunksStatuses[i] = 0
 	}
 
