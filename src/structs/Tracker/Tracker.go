@@ -2,17 +2,15 @@ package Tracker
 
 import (
 	"../File"
-	"../Requests"
 	"../IO"
-	"strconv"
-	"strings"
-	"sync"
-
-	//"container/list"
+	"../Requests"
 	"encoding/json"
 	"fmt"
+	"github.com/deckarep/golang-set"
 	"net"
 	"os"
+	"strconv"
+	"sync"
 )
 
 type Tracker struct {
@@ -20,9 +18,12 @@ type Tracker struct {
 	Map map[string] *File.File
 	DownloadRequests map[Requests.DownloadRequestKey] *Requests.DownloadRequest
 	ListOfPeers []string
+	FileList string
+	AvailableFiles mapset.Set
+	AvailableFileNames mapset.Set
 }
 
-var separator = "\n================================================\n"
+var separator = "\n-------------------------------------------------------\n"
 
 func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	defer conn.Close()
@@ -33,7 +34,21 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	var writer = IO.Writer{conn}
 	var reader = IO.Reader{conn}
 
-	writer.Write(separator+"Hello! How are you?\nPlease choose an option D - download (currently supported):"+separator)
+	peersListMsg := reader.Read()
+
+	fmt.Println("[HandleNode] Procitao peerslistmsg")
+
+	var sliceList []*File.File
+	err := json.Unmarshal([]byte(peersListMsg), &sliceList)
+	CheckError(err)
+
+	for _, file := range sliceList {
+		fmt.Printf("%v size: %v chunks: %v chunksize: %v\n", (*file).Name, *file.Size, *file.Chunks, *file.ChunkSize)
+		tracker.Map[(*file).Name] = file
+		tracker.AvailableFiles.Add((*file).Name)
+	}
+
+	writer.Write(separator+"Please choose an option D - download (currently supported):"+separator)
 
 	var option = reader.Read()
 
@@ -45,13 +60,24 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 }
 
 func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
-	caller := strings.Split(writer.Conn.RemoteAddr().String(), ":")[0]
-	writer.Write(separator+"Give me a root hash of file you want and public key\n"+separator)
+	//caller := strings.Split(writer.Conn.RemoteAddr().String(), ":")[0]
+
+	// Treba da mu dam spisak svih dostupnih fajlova
+	sliceList := tracker.AvailableFiles.ToSlice()
+
+	listOfFiles := ""
+	i := 1
+	for _, file := range sliceList{
+		listOfFiles += fmt.Sprintf("%d. %v\n", i, file)
+		i++
+	}
+
+	fmt.Println(listOfFiles)
+
+	writer.Write(listOfFiles+"Choose a file from the list:")
 
 	request := reader.Read()
-
 	requestFromPeer := Requests.DownloadRequestKey{}
-
 	err := json.Unmarshal([]byte(request), &requestFromPeer)
 	CheckError(err)
 
@@ -65,7 +91,6 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 	writer.Write(string(fMarshall))
 
-	// Hardkodovano maksimalna velicina liste 100
 	var helpInt int
 	helpInt = 0
 	tracker.DownloadRequests[requestFromPeer] = &Requests.DownloadRequest{make([]string, 0), &helpInt}
@@ -74,10 +99,10 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	var group sync.WaitGroup
 	var mutex sync.Mutex
 	for i, peer := range tracker.ListOfPeers {
-		if peer != caller {
+		//if peer != caller {
 			group.Add(1)
 			go tracker.contactPeer(peer, i, &requestFromPeer, &group, &mutex)
-		}
+		//}
 	}
 
 	group.Wait()
@@ -122,7 +147,7 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	// Ne treba da ih dodajem duplo
 	var ind = false
 	for ip := range tracker.DownloadRequests[*requestFromPeer].CryptedIPs {
-		if (strconv.Itoa(ip) == peerIP) {
+		if strconv.Itoa(ip) == peerIP {
 			ind = true
 			break
 		}

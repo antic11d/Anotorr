@@ -9,11 +9,11 @@ import (
 	"crypto/rsa"
 	"encoding/json"
 	"fmt"
+	"github.com/deckarep/golang-set"
 	"gitlab.com/NebulousLabs/go-upnp"
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -31,6 +31,8 @@ type Peer struct {
 	MyFolderPath string
 	MyFiles map[string] File.File
 	MyTrees map[string] MerkleTree.Merkle //Za svaki root hash ja cuvam merkle stablo za njega
+	SetMyfNames mapset.Set
+	SetMyFiles mapset.Set
 }
 
 type MsgToNode struct {
@@ -38,7 +40,7 @@ type MsgToNode struct {
 	ChunkNum int64
 }
 
-var separator = "\n--------------------------------------------\n"
+var separator = "\n-------------------------------------------------------\n"
 var FOLDER_PATH = ""
 
 func CheckError(err error) {
@@ -77,11 +79,13 @@ func InitializeNode() (p *Peer){
 
 	fmt.Println(separator+"Hello node :)\nWhat is your name?"+separator)
 	var name string
-	_, err = fmt.Scanf("%s", &name)
+	//_, err = fmt.Scanf("%s", &name)
 	CheckError(err)
+	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, MyFiles:initListOfFiles()}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
+	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
 
@@ -94,8 +98,9 @@ func InitializeNode() (p *Peer){
 	return p
 }
 
-// moja putanja: /home/antic/Desktop/goTorr_files
+// moja putanja: /home/goTorr_files
 func checkFolder() string {
+	/*
 	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
 	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
 
@@ -119,12 +124,14 @@ func checkFolder() string {
 
 	FOLDER_PATH = path
 
-	return path
-	//return "/home/antic/Desktop/goTorr_files"
+	//return path*/
+	return "/home/goTorr_files"
 }
 
-func initListOfFiles() map[string] File.File {
+func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 	files := make(map[string]File.File)
+	set := mapset.NewSet()
+	fSet := mapset.NewSet()
 	path := checkFolder()
 
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
@@ -136,15 +143,17 @@ func initListOfFiles() map[string] File.File {
 
 			var chunkSize = fSize / chunks
 
-			//fmt.Printf("%+v -- %+v -- %+v -- %+v\n", info.Name(), fSize, chunks, chunkSize)
-			files[info.Name()] = File.File{info.Name(), &fSize, &chunks, &chunkSize}
+			currFile := File.File{info.Name(), &fSize, &chunks, &chunkSize}
+			files[info.Name()] = currFile
+			set.Add(info.Name())
+			fSet.Add(&currFile)
 		}
 
 		return nil
 	})
 	CheckError(err)
 
-	return files
+	return files, set, fSet
 }
 
 //portovi 9091, 9092
@@ -165,11 +174,11 @@ func (peer Peer) ListenTracker() {
 			continue
 		}
 
-		go handleTracker(conn)
+		go peer.handleTracker(conn)
 	}
 }
 
-func handleTracker(conn *net.TCPConn) {
+func (peer Peer) handleTracker(conn *net.TCPConn) {
 	defer conn.Close()
 	var tmpReader = IO.Reader{conn}
 	var tmpWriter = IO.Writer{conn}
@@ -183,23 +192,26 @@ func handleTracker(conn *net.TCPConn) {
 
 	fmt.Printf("[handleTracker] Dobio objekat: %+v\n", wrappedRequest)
 
-	// Ovde treba da prodjem kroz svoji fajl sistem i da vidim da li imam taj fajl, ako imam onda vratim svoj IP trekeru
-	tmpWriter.Write(strings.Split(conn.LocalAddr().String(), ":")[0])
+	// Ako imam fajl javljam svoj IP da bi mi se downloader javio
+	if peer.SetMyfNames.Contains(wrappedRequest.Key.RootHash) {
+		fmt.Println("[handletracker] dajem svoj ip: "+peer.IP)
+		tmpWriter.Write(peer.IP)
+	}
 }
 
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
 	trackerWriter.Write("D")
 
-	//ovde ubacujemo dodatni read/write gde meni treker salje listu fajlova i odalte ja sa
-	//mojim rootHashom uzimam koliko ima chunkova fajl
+	filesList := trackerReader.Read()
 
+	fmt.Println(separator+"Avaliable files:\n"+filesList+separator)
 	// STATUS 0 = NIJE SKINUT, STATUS 1 = TRENUTNO SE SKIDA, STATUS 2 = SKINUT
-	// Treker trazi root hash i public key, tj DownloadRequestKey
-	msg := trackerReader.Read()
 
-	fmt.Println(msg)
+	var fname string
+	_, err := fmt.Scanf("%s\n", &fname)
+	CheckError(err)
 
-	request := Requests.DownloadRequestKey{"zorka.mp3", &peer.PrivateKey.PublicKey}
+	request := Requests.DownloadRequestKey{fname, &peer.PrivateKey.PublicKey}
 	jsonReq, err := json.Marshal(request)
 	CheckError(err)
 
@@ -227,7 +239,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	}
 
 	// Poruka sa objektom kome sve treba da se javim
-	msg = trackerReader.Read()
+	msg := trackerReader.Read()
 
 	completedReq := Requests.WrappedRequest{}
 	err = json.Unmarshal([]byte(msg), &completedReq)

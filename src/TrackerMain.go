@@ -1,14 +1,15 @@
 	package main
 
-import (
-	"./structs/File"
-	"./structs/Requests"
-	"./structs/Tracker"
-	"fmt"
-	"gitlab.com/NebulousLabs/go-upnp"
-	"net"
-	"strings"
-)
+	import (
+		"./structs/File"
+		"./structs/Requests"
+		"./structs/Tracker"
+		"fmt"
+		"github.com/deckarep/golang-set"
+		"gitlab.com/NebulousLabs/go-upnp"
+		"net"
+		"strings"
+	)
 
 var separator = "\n--------------------------------------------\n"
 var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9095")
@@ -16,16 +17,12 @@ var tracker = Tracker.Tracker{tcpAddr,
 							make(map[string] *File.File),
 				make(map[Requests.DownloadRequestKey]*Requests.DownloadRequest),
 				make([]string, 0),
+				"",
+				mapset.NewSet(),
+				mapset.NewSet(),
 }
 
 func main() {
-	//tracker.Map["brena"] = &File.File{"Lepa Brena", 100, 10, 123}
-	var size int64 = 4391844
-	var chunks int64 = 5
-	var chunkSize int64 = 1000000
-	tracker.Map["zorka"] = &File.File{"zorka.mp3", &size, &chunks, &chunkSize}
-	//tracker.Map["zvorka"] = &File.File{"Zvorinka Milosevic", 100, 10, 123}
-
 	d, err := upnp.Discover()
 	Tracker.CheckError(err)
 
@@ -49,10 +46,6 @@ func main() {
 
 		tracker.ListOfPeers = append(tracker.ListOfPeers, caller)
 		fmt.Println("Added peer " + caller)
-
-		//tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.162.98")
-		//tracker.ListOfPeers = append(tracker.ListOfPeers, "192.168.1.106")
-		//tracker.ListOfPeers = append(tracker.ListOfPeers, "10.0.155.169")
 
 		if err != nil {
 			fmt.Println("Error while accepting. Continuing...")

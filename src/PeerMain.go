@@ -3,6 +3,7 @@ package main
 import (
 	"./structs/IO"
 	"./structs/Node"
+	"encoding/json"
 	"fmt"
 	"net"
 
@@ -13,18 +14,9 @@ var trackerReader = IO.Reader{nil}
 var trackerWriter = IO.Writer{nil}
 
 func main() {
-	/*
-	//Inicijalizaciju Merkle stabla isto prebaci u InitializeNode()
-	m := MerkleTree.Merkle{make([][] string, 0)}
-
-	m.CreateTree("misc/zorka.mp3", 5, 1000000)
-
-	m.CreateProof(1)
-	*/
 	self := Node.InitializeNode()
-	//fmt.Printf("[PeerMain] Hello, my name is: %+v\n", self)
 
-	//Javljam se trekeru. Hardkodovan localhost
+	//Javljam se trekeru
 	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.13:9095")
 	Node.CheckError(err)
 	conn, err := net.DialTCP("tcp",nil, tAddr)
@@ -36,6 +28,12 @@ func main() {
 	trackerReader = IO.Reader{self.ReqConn}
 	trackerWriter = IO.Writer{self.ReqConn}
 
+	// Javljam sta ja imam od fajlova
+	jsonSlice, err := json.Marshal(self.SetMyFiles.ToSlice())
+	Node.CheckError(err)
+
+	trackerWriter.Write(string(jsonSlice))
+
 	// Poruka predstavljanja trekera, choose option itd...
 	msg := trackerReader.Read()
 	fmt.Println(msg)
@@ -44,7 +42,7 @@ func main() {
 	_, err = fmt.Scanf("%s", &ans)
 	Node.CheckError(err)
 
-	if (ans == "D") {
+	if ans == "D" {
 		self.RequestDownload(trackerWriter, trackerReader)
 	}
 
