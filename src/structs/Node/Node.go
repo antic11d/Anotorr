@@ -266,7 +266,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 			// Da se proveri da li se niz salje po referenci tj apdejutuje u funkciji
 			chunksStatuses[i] = 1
 			downloadWG.Add(1)
-			go peer.connectToPeer(list[tmpSeeder], &downloadWG, f, i, chunksStatuses, mutex, &numOfDownloadedChunks)
+			go peer.connectToPeer(fname, list[tmpSeeder], &downloadWG, f, i, chunksStatuses, mutex, &numOfDownloadedChunks)
 		}
 		tmpSeeder = (tmpSeeder + 1) % len(list)
 	}
@@ -320,7 +320,7 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 	tmpWriter.WriteFile(path, msg.ChunkNum, *peer.MyFiles[msg.RootHash].ChunkSize, finfo.Size())
 }
 
-func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, numOfPart int64, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int64) {
+func (peer Peer) connectToPeer(fname string, IP string, group *sync.WaitGroup, f *os.File, numOfPart int64, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int64) {
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
 	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9092")
@@ -333,7 +333,7 @@ func (peer Peer) connectToPeer(IP string, group *sync.WaitGroup, f *os.File, num
 
 	// Hardkodovan root hash fajla koji hocu
 
-	msg := MsgToNode{"zorka.mp3", numOfPart}
+	msg := MsgToNode{fname, numOfPart}
 
 	msgForSend, err := json.Marshal(msg)
 	CheckError(err)
