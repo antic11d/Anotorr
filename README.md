@@ -11,7 +11,9 @@ Tracker will discredit nodes that have "changed" file. Important aspect is that 
 * Every node (peer) in network can be both seeder and downloader.
 * uPnP protocol is used for connecting nodes in network, where user explicitly forward ports.
 * Known issue is that uPnP protocol isn't supported on all router devices, also mobile network operator does not support uPnP so our app is (for now) available only for pc.
-
+***
+### Platforms:
+* Our project is being developed and tested on Linux operating systems, but there is no reason it would not work on Windows.  
 ***
 ### Language in use:  
 * __Go__
