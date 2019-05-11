@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-
-	//"net"
 )
 
 var trackerReader = IO.Reader{nil}

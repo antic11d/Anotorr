@@ -152,7 +152,7 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 			break
 		}
 	}
-	if (!ind) {
+	if !ind {
 		tracker.DownloadRequests[*requestFromPeer].CryptedIPs =
 			append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs, peerIP)
 	}

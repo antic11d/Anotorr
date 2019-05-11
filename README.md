@@ -5,7 +5,7 @@
 * The idea is to implement peer-to-peer torrent protocol. 
 
 * Tracker server works like a signal server, when someone wants to download a file, tracker reacts on posted request and contacts all peers in network, so they can seed that file.  
-For consistence, Merkle Tree data structure will be used. Tracker will also contain queue with requests for downloading and uploading files. Each file will be downloaded in fixed number of chunks.  
+Tracker will also contain queue with requests for downloading and uploading files. Each file will be downloaded in fixed number of chunks.  
 Tracker will discredit nodes that have "changed" file. Important aspect is that tracker does not contains IPs of every node that contains each file which is the main difference with other torrent protocols. 
 <br>In future, signal server will be replaced with Ethereum blockchain, because we want decentralization of network.
 * Every node (peer) in network can be both seeder and downloader.
