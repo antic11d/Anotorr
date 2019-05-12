@@ -14,8 +14,8 @@ var trackerWriter = IO.Writer{nil}
 func main() {
 	self := Node.InitializeNode()
 
-	//Javljam se trekeru
-	tAddr, err := net.ResolveTCPAddr("tcp", "192.168.0.13:9095")
+	//Javljam se trekeru; treker se vrti kod mene na kompu
+	tAddr, err := net.ResolveTCPAddr("tcp", "24.135.223.112:9095")
 	Node.CheckError(err)
 	conn, err := net.DialTCP("tcp",nil, tAddr)
 	Node.CheckError(err)
@@ -26,6 +26,12 @@ func main() {
 	trackerReader = IO.Reader{self.ReqConn}
 	trackerWriter = IO.Writer{self.ReqConn}
 
+	//Handshake
+	trackerWriter.Write(self.IP)
+
+	msg := trackerReader.Read()
+	fmt.Println("Handshake with tracker went: ", msg)
+
 	// Javljam sta ja imam od fajlova
 	jsonSlice, err := json.Marshal(self.SetMyFiles.ToSlice())
 	Node.CheckError(err)
@@ -33,7 +39,7 @@ func main() {
 	trackerWriter.Write(string(jsonSlice))
 
 	// Poruka predstavljanja trekera, choose option itd...
-	msg := trackerReader.Read()
+	msg = trackerReader.Read()
 	fmt.Println(msg)
 
 	var ans string

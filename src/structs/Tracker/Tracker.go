@@ -28,11 +28,18 @@ var separator = "\n-------------------------------------------------------\n"
 func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	defer conn.Close()
 
-	fmt.Println("Accepted connection from:", conn.RemoteAddr().String())
-
 	//Inicijalizujemo konekciju ka peer-u
 	var writer = IO.Writer{conn}
 	var reader = IO.Reader{conn}
+
+	//Ovde da probamo handshake
+	callerIP := reader.Read()
+
+	fmt.Println("[HandleNode] handshake: ", callerIP)
+
+	writer.Write("OK")
+
+	tracker.ListOfPeers = append(tracker.ListOfPeers, callerIP)
 
 	peersListMsg := reader.Read()
 

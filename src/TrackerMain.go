@@ -42,10 +42,7 @@ func main() {
 		conn, err := listener.AcceptTCP()
 
 		caller := strings.Split(conn.RemoteAddr().String(), ":")[0]
-		fmt.Println("[TrackerMain] Got call from", caller)
-
-		tracker.ListOfPeers = append(tracker.ListOfPeers, caller)
-		fmt.Println("Added peer " + caller)
+		fmt.Println("[TrackerMain] Got call from", caller, " [cvoriste...]")
 
 		if err != nil {
 			fmt.Println("Error while accepting. Continuing...")
