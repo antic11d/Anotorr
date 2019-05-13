@@ -33,6 +33,7 @@ type Peer struct {
 	MyTrees map[string] MerkleTree.Merkle //Za svaki root hash ja cuvam merkle stablo za njega
 	SetMyfNames mapset.Set
 	SetMyFiles mapset.Set
+	LocalAddr string
 }
 
 type MsgToNode struct {
@@ -62,13 +63,26 @@ func getMyIP() (string) {
 	fmt.Println(separator+"Your external IP is:" + ip + separator)
 
 	// port forwarding
-	err = d.Forward(9092, "upnp goTorr 1")
+	err = d.Forward(9093, "upnp goTorr 1")
 	CheckError(err)
 
-	err = d.Forward(50335, "upnp goTorr 2")
+	err = d.Forward(9091, "upnp goTorr 2")
 	CheckError(err)
 
 	return ip
+}
+
+func getLocalIP() string {
+	host, _ := os.Hostname()
+	addrs, _ := net.LookupIP(host)
+	for _, addr := range addrs {
+		if ipv4 := addr.To4(); ipv4 != nil {
+			fmt.Println("[getLocalIP]IPv4: ", ipv4)
+			return ipv4.String()
+		}
+	}
+
+	return ""
 }
 
 func InitializeNode() (p *Peer){
@@ -84,7 +98,7 @@ func InitializeNode() (p *Peer){
 	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, LocalAddr: getLocalIP()}
 	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
@@ -160,7 +174,7 @@ func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 
 // Cekam da mi se javi treker da mi kaze da neko hoce da skida fajl koji ja potencijalno imam
 func (peer Peer) ListenTracker() {
-	var tListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":50335")
+	var tListenAddr, err = net.ResolveTCPAddr("tcp4", peer.LocalAddr+":9091")
 	CheckError(err)
 
 	peer.ListenerTracker, err = net.ListenTCP("tcp", tListenAddr)
@@ -277,8 +291,9 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 func (peer Peer) ListenPeer() {
 
-	var pListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":50336")
+	var pListenAddr, err = net.ResolveTCPAddr("tcp4", peer.LocalAddr+":9093")
 	CheckError(err)
+	fmt.Println(pListenAddr.String())
 
 	peer.ListenerPeer, err = net.ListenTCP("tcp", pListenAddr)
 	CheckError(err)
@@ -323,7 +338,7 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 func (peer Peer) connectToPeer(fname string, IP string, group *sync.WaitGroup, f *os.File, numOfPart int64, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int64) {
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
-	rAddr, err := net.ResolveTCPAddr("tcp", IP+":50336")
+	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9093")
 
 	conn, err := net.DialTCP("tcp", nil, rAddr)
 	CheckError(err)
