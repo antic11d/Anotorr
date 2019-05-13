@@ -91,7 +91,7 @@ func InitializeNode() (p *Peer){
 
 	CheckError(err)
 
-	fmt.Println(separator+"Hello node :)\nWhat is your name?"+separator)
+	fmt.Println(separator+"Hello node :)\nWhat is your name? RUN AS SUDO!!!"+separator)
 	var name string
 	//_, err = fmt.Scanf("%s", &name)
 	CheckError(err)
