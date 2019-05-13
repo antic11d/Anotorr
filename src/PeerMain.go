@@ -50,6 +50,8 @@ func main() {
 		self.RequestDownload(trackerWriter, trackerReader)
 	}
 
+	fmt.Println("Just keep seeding...")
+
 	self.WaitGroup.Add(2)
 
 		go self.ListenTracker()

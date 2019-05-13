@@ -127,7 +127,7 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 
 func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Requests.DownloadRequestKey, group *sync.WaitGroup, mutex *sync.Mutex)  {
 	defer group.Done()
-	peerAddr, err := net.ResolveTCPAddr("tcp", pIP+":9091")
+	peerAddr, err := net.ResolveTCPAddr("tcp", pIP+":50335")
 	CheckError(err)
 
 	tmpConn, err := net.DialTCP("tcp", nil, peerAddr) // 9091 hardkodovano jer tamo slusa peer

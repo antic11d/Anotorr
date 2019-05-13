@@ -65,7 +65,7 @@ func getMyIP() (string) {
 	err = d.Forward(9092, "upnp goTorr 1")
 	CheckError(err)
 
-	err = d.Forward(9091, "upnp goTorr 2")
+	err = d.Forward(50335, "upnp goTorr 2")
 	CheckError(err)
 
 	return ip
@@ -156,11 +156,11 @@ func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 	return files, set, fSet
 }
 
-//portovi 9091, 9092
+//portovi 9091 = 50335, 9092 = 50336
 
 // Cekam da mi se javi treker da mi kaze da neko hoce da skida fajl koji ja potencijalno imam
 func (peer Peer) ListenTracker() {
-	var tListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":9091")
+	var tListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":50335")
 	CheckError(err)
 
 	peer.ListenerTracker, err = net.ListenTCP("tcp", tListenAddr)
@@ -277,7 +277,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 func (peer Peer) ListenPeer() {
 
-	var pListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":9092")
+	var pListenAddr, err = net.ResolveTCPAddr("tcp4", peer.IP+":50336")
 	CheckError(err)
 
 	peer.ListenerPeer, err = net.ListenTCP("tcp", pListenAddr)
@@ -323,7 +323,7 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 func (peer Peer) connectToPeer(fname string, IP string, group *sync.WaitGroup, f *os.File, numOfPart int64, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int64) {
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
-	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9092")
+	rAddr, err := net.ResolveTCPAddr("tcp", IP+":50336")
 
 	conn, err := net.DialTCP("tcp", nil, rAddr)
 	CheckError(err)
