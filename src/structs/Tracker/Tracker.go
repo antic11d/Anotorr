@@ -55,12 +55,14 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 		tracker.AvailableFiles.Add((*file).Name)
 	}
 
-	writer.Write(separator+"Please choose an option D - download (currently supported):"+separator)
+	writer.Write(separator+"Please choose an option D - download (currently supported), S - seeding only:"+separator)
 
 	var option = reader.Read()
 
 	if option == "D" {
 		tracker.HandleDownload(reader, writer)
+	} else if option == "S" {
+		writer.Write("Samo ti seeduj...")
 	} else {
 		writer.Write("Choose a valid option")
 	}

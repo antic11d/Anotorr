@@ -41,16 +41,18 @@ func main() {
 	// Poruka predstavljanja trekera, choose option itd...
 	msg = trackerReader.Read()
 	fmt.Println(msg)
-/*
+
 	var ans string
 	_, err = fmt.Scanf("%s", &ans)
 	Node.CheckError(err)
 
 	if ans == "D" {
 		self.RequestDownload(trackerWriter, trackerReader)
-	}*/
-
-	fmt.Println("Just keep seeding...")
+	} else {
+		trackerWriter.Write("S")
+		msg := trackerReader.Read()
+		fmt.Println(msg)
+	}
 
 	self.WaitGroup.Add(2)
 
