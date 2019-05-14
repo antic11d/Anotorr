@@ -147,6 +147,7 @@ func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 	set := mapset.NewSet()
 	fSet := mapset.NewSet()
 	path := checkFolder()
+	FOLDER_PATH = path
 
 	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if !info.IsDir() {
