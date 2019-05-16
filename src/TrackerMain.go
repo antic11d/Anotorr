@@ -16,7 +16,7 @@ var tcpAddr, _ = net.ResolveTCPAddr("tcp4", ":9095")
 var tracker = Tracker.Tracker{tcpAddr,
 							make(map[string] *File.File),
 				make(map[Requests.DownloadRequestKey]*Requests.DownloadRequest),
-				make([]string, 0),
+				mapset.NewSet(),
 				"",
 				mapset.NewSet(),
 				mapset.NewSet(),

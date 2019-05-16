@@ -102,7 +102,7 @@ func InitializeNode() (p *Peer){
 	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg, LocalAddr: getLocalIP()}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
 	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
@@ -116,7 +116,7 @@ func InitializeNode() (p *Peer){
 	return p
 }
 
-// moja putanja: /home/goTorr_files
+// moja putanja: /home/antic/goTorr_files
 func checkFolder() string {
 	/*
 	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
@@ -143,7 +143,7 @@ func checkFolder() string {
 	FOLDER_PATH = path
 
 	//return path*/
-	return "/home/goTorr_files"
+	return "/home/antic/goTorr_files"
 }
 
 func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
@@ -179,7 +179,7 @@ func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 
 // Cekam da mi se javi treker da mi kaze da neko hoce da skida fajl koji ja potencijalno imam
 func (peer Peer) ListenTracker() {
-	var tListenAddr, err = net.ResolveTCPAddr("tcp4", peer.LocalAddr+":9091")
+	var tListenAddr, err = net.ResolveTCPAddr("tcp4", ":9091")
 	CheckError(err)
 
 	peer.ListenerTracker, err = net.ListenTCP("tcp", tListenAddr)
@@ -269,7 +269,8 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	var downloadWG sync.WaitGroup
 	var list = completedReq.Value.CryptedIPs
 
-	f, err := os.Create(peer.MyFolderPath + "/" + fInfo.Name)
+	//peer.MyFolderPath +
+	f, err := os.Create(peer.MyFolderPath+"/down_" + fInfo.Name)
 
 	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
 	tmpSeeder := 0
@@ -295,8 +296,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 }
 
 func (peer Peer) ListenPeer() {
-
-	var pListenAddr, err = net.ResolveTCPAddr("tcp4", peer.LocalAddr+":9093")
+	var pListenAddr, err = net.ResolveTCPAddr("tcp4", ":9093")
 	CheckError(err)
 	fmt.Println(pListenAddr.String())
 
@@ -336,6 +336,8 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 	finfo, err := f.Stat()
 	CheckError(err)
 
+	fmt.Printf("[handlePeer] finfo size: %d\n", finfo.Size())
+
 	path := peer.MyFolderPath+"/"+peer.MyFiles[msg.RootHash].Name
 	tmpWriter.WriteFile(path, msg.ChunkNum, *peer.MyFiles[msg.RootHash].ChunkSize, finfo.Size())
 }
@@ -361,8 +363,6 @@ func (peer Peer) connectToPeer(fname string, IP string, group *sync.WaitGroup, f
 	tmpWriter.Write(string(msgForSend))
 
 	partBytes, size := tmpReader.ReadFile()
-
-	//fmt.Printf("wg: %+v\n", group)
 
 	// Ovde mora da se zakljuca fajl pre pisanja
 	mutex.Lock()

@@ -9,7 +9,6 @@ import (
 	"github.com/deckarep/golang-set"
 	"net"
 	"os"
-	"strconv"
 	"sync"
 )
 
@@ -17,7 +16,7 @@ type Tracker struct {
 	Addr *net.TCPAddr
 	Map map[string] *File.File
 	DownloadRequests map[Requests.DownloadRequestKey] *Requests.DownloadRequest
-	ListOfPeers []string
+	ListOfPeers mapset.Set
 	FileList string
 	AvailableFiles mapset.Set
 	AvailableFileNames mapset.Set
@@ -39,7 +38,11 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 
 	writer.Write("OK")
 
-	tracker.ListOfPeers = append(tracker.ListOfPeers, callerIP)
+	tracker.ListOfPeers.Add(callerIP)
+
+	for _, peer := range tracker.ListOfPeers.ToSlice() {
+		fmt.Println(peer)
+	}
 
 	peersListMsg := reader.Read()
 
@@ -60,7 +63,7 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	var option = reader.Read()
 
 	if option == "D" {
-		tracker.HandleDownload(reader, writer)
+		tracker.HandleDownload(callerIP, reader, writer)
 	} else if option == "S" {
 		writer.Write("Samo ti seeduj...")
 	} else {
@@ -68,7 +71,7 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	}
 }
 
-func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
+func (tracker Tracker) HandleDownload(caller string, reader IO.Reader, writer IO.Writer) {
 	//caller := strings.Split(writer.Conn.RemoteAddr().String(), ":")[0]
 
 	// Treba da mu dam spisak svih dostupnih fajlova
@@ -107,11 +110,15 @@ func (tracker Tracker) HandleDownload(reader IO.Reader, writer IO.Writer) {
 	// Javljam se svima osim onome ko mi je trazio request!!!!
 	var group sync.WaitGroup
 	var mutex sync.Mutex
-	for i, peer := range tracker.ListOfPeers {
-		//if peer != caller {
+	for i, peer := range tracker.ListOfPeers.ToSlice() {
+		peerIP := fmt.Sprintf("%v", peer)
+		if peer != caller {
 			group.Add(1)
-			go tracker.contactPeer(peer, i, &requestFromPeer, &group, &mutex)
-		//}
+
+			go tracker.contactPeer(peerIP, i, &requestFromPeer, &group, &mutex)
+		} else {
+			fmt.Println("Bato jebiga jedini si peer, " + peerIP)
+		}
 	}
 
 	group.Wait()
@@ -155,8 +162,9 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	mutex.Lock()
 	// Ne treba da ih dodajem duplo
 	var ind = false
-	for ip := range tracker.DownloadRequests[*requestFromPeer].CryptedIPs {
-		if strconv.Itoa(ip) == peerIP {
+	fmt.Println("Hocu da dodam "+peerIP)
+	for _, ip := range tracker.DownloadRequests[*requestFromPeer].CryptedIPs {
+		if ip == peerIP {
 			ind = true
 			break
 		}
