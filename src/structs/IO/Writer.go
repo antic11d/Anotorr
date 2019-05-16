@@ -27,7 +27,7 @@ func calcSize(chunkNum int64, chunkSize int64, fileSize int64) int64 {
 }
 
 func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, fileSize int64){
-	f, err := os.Open("misc/"+filename)
+	f, err := os.Open(filename)
 	defer f.Close()
 	CheckError(err)
 
@@ -38,7 +38,7 @@ func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, file
 
 	// ne chunksize nego ono sto mi sracunamo
 	tmpPartSize := strconv.FormatInt(sizeForSending,10)
-
+	fmt.Printf("sizeForSending: %d\n", sizeForSending)
 	CheckError(err)
 
 	// Saljem downloaderu velicinu parta

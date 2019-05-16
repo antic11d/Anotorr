@@ -47,7 +47,7 @@ func main() {
 	Node.CheckError(err)
 
 	if ans == "D" {
-		self.RequestDownload(trackerWriter, trackerReader)
+		go self.RequestDownload(trackerWriter, trackerReader)
 	} else {
 		trackerWriter.Write("S")
 		msg := trackerReader.Read()
