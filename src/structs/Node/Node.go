@@ -95,14 +95,14 @@ func InitializeNode() (p *Peer){
 
 	CheckError(err)
 
-	fmt.Println(separator+"Hello node :)\nWhat is your name? RUN AS SUDO!!!"+separator)
+	fmt.Println(separator+"Hello node :)\n"+separator)
 	var name string
 	//_, err = fmt.Scanf("%s", &name)
 	CheckError(err)
 	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getLocalIP(), WaitGroup:wg}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
 	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
@@ -116,7 +116,6 @@ func InitializeNode() (p *Peer){
 	return p
 }
 
-// moja putanja: /home/antic/goTorr_files
 func checkFolder() string {
 	fmt.Println(separator+"Give me a path to goTorr_files folder: (format: /absolute/path/to/folder/goTorr_files)")
 	fmt.Println("In case you haven't made it yet type N, mkdir and then start app again, thank you!"+separator)
@@ -139,7 +138,6 @@ func checkFolder() string {
 	FOLDER_PATH = path
 
 	return path
-	//return "/home/antic/goTorr_files"
 }
 
 func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {

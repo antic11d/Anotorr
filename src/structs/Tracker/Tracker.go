@@ -112,7 +112,7 @@ func (tracker Tracker) HandleDownload(caller string, reader IO.Reader, writer IO
 
 			go tracker.contactPeer(peerIP, i, &requestFromPeer, &group, &mutex)
 		} else {
-			fmt.Println("Bato jebiga jedini si peer, " + peerIP)
+			//fmt.Println("Bato jebiga jedini si peer, " + peerIP)
 		}
 	}
 
@@ -147,6 +147,7 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	tmpWriter.Write(string(tmpMsg))
 
 	cryptedPIP := make([]byte, 128)
+
 	_, err = tmpReader.Conn.Read(cryptedPIP)
 	CheckError(err)
 
