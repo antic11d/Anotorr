@@ -7,6 +7,7 @@ import (
 	"../Requests"
 	"crypto/rand"
 	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	"github.com/deckarep/golang-set"
@@ -90,8 +91,7 @@ func getLocalIP() string {
 }
 
 func InitializeNode() (p *Peer){
-	//Inicijalizaciju Merkle stabla isto uradi ovde
-	pk, err := rsa.GenerateKey(rand.Reader, 2048)
+	pk, err := rsa.GenerateKey(rand.Reader, 1024)
 
 	CheckError(err)
 
@@ -102,7 +102,7 @@ func InitializeNode() (p *Peer){
 	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getLocalIP(), WaitGroup:wg}
 	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
@@ -118,10 +118,6 @@ func InitializeNode() (p *Peer){
 
 // moja putanja: /home/antic/goTorr_files
 func checkFolder() string {
-	/*
-	// Malo hardkoda... Trazi se od korisnika da unese putanju do foldera sa fajlovima, inace ima dosta probelma
-	// sa pravima pristupa, hijerarhijom unutar /home foldera itd...
-
 	fmt.Println(separator+"Give me a path to goTorr_files folder: (format: /absolute/path/to/folder/goTorr_files)")
 	fmt.Println("In case you haven't made it yet type N, mkdir and then start app again, thank you!"+separator)
 
@@ -136,14 +132,14 @@ func checkFolder() string {
 	finfo, err := os.Stat(path)
 	CheckError(err)
 
-	if finfo.IsDir() && finfo.Name() == "goTorr_files" {
+	if finfo.IsDir() && finfo.Name() == "Anotorr_files" {
 		fmt.Println(separator+"All good! Welcome to goTorr community :)"+separator)
 	}
 
 	FOLDER_PATH = path
 
-	//return path*/
-	return "/home/antic/goTorr_files"
+	return path
+	//return "/home/antic/goTorr_files"
 }
 
 func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
@@ -179,7 +175,7 @@ func initListOfFiles() (map[string] File.File, mapset.Set, mapset.Set) {
 
 // Cekam da mi se javi treker da mi kaze da neko hoce da skida fajl koji ja potencijalno imam
 func (peer Peer) ListenTracker() {
-	var tListenAddr, err = net.ResolveTCPAddr("tcp4", ":9091")
+	var tListenAddr, err = net.ResolveTCPAddr("tcp4", ":9096")
 	CheckError(err)
 
 	peer.ListenerTracker, err = net.ListenTCP("tcp", tListenAddr)
@@ -209,15 +205,24 @@ func (peer Peer) handleTracker(conn *net.TCPConn) {
 	err := json.Unmarshal([]byte(msg), &wrappedRequest)
 	CheckError(err)
 
-	fmt.Printf("[handleTracker] Dobio objekat: %+v\n", wrappedRequest)
+	publicKey := wrappedRequest.Key.PublicKey
 
 	// Ako imam fajl javljam svoj IP da bi mi se downloader javio
 	if peer.SetMyfNames.Contains(wrappedRequest.Key.RootHash) {
-		fmt.Println("[handletracker] dajem svoj ip: "+peer.IP)
-		tmpWriter.Write(peer.IP)
+		cryptedIP, err := rsa.EncryptOAEP(
+			sha256.New(),
+			rand.Reader,
+			publicKey,
+			[]byte(peer.IP),
+			[]byte(""),
+		)
+		CheckError(err)
+
+		cryptedMsg := fmt.Sprintf("%v", cryptedIP)
+		fmt.Println(cryptedMsg)
+		tmpWriter.Conn.Write(cryptedIP)
 	}
 }
-
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
 	trackerWriter.Write("D")
 
@@ -245,8 +250,6 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	err = json.Unmarshal([]byte(fileInfo), &fInfo)
 	CheckError(err)
 
-	fmt.Printf("[RequestDownload] Got file info object: %+v\n", fInfo)
-
 	numOfChunks := *fInfo.Chunks
 	var numOfDownloadedChunks int64 = 0
 
@@ -256,7 +259,6 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	for i = 0; i < numOfChunks; i++ {
 		chunksStatuses[i] = 0
 	}
-
 	// Poruka sa objektom kome sve treba da se javim
 	msg := trackerReader.Read()
 
@@ -264,12 +266,26 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	err = json.Unmarshal([]byte(msg), &completedReq)
 	CheckError(err)
 
-	fmt.Printf("[RequestDownload] Treba da se javim svima iz liste: %+v i duzine %+v\n", completedReq.Value.CryptedIPs, len(completedReq.Value.CryptedIPs))
-
 	var downloadWG sync.WaitGroup
-	var list = completedReq.Value.CryptedIPs
+	var list = completedReq.Value.CryptedIPs.Arr
 
-	//peer.MyFolderPath +
+	decryptedList := make([]string, len(list))
+
+	for i, cryptedIP := range list {
+		fmt.Println(cryptedIP)
+		fmt.Println(len(cryptedIP))
+		decryptedByte, err := rsa.DecryptOAEP(
+			sha256.New(),
+			nil,
+			peer.PrivateKey,
+			cryptedIP,
+			[]byte(""),
+		)
+		CheckError(err)
+
+		decryptedList[i] = fmt.Sprintf("%s", decryptedByte)
+	}
+
 	f, err := os.Create(peer.MyFolderPath+"/down_" + fInfo.Name)
 
 	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
@@ -283,10 +299,9 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 		}
 
 		if chunksStatuses[i] == 0 {
-			// Da se proveri da li se niz salje po referenci tj apdejutuje u funkciji
 			chunksStatuses[i] = 1
 			downloadWG.Add(1)
-			go peer.connectToPeer(fname, list[tmpSeeder], &downloadWG, f, i, chunksStatuses, mutex, &numOfDownloadedChunks)
+			go peer.connectToPeer(fname, decryptedList[tmpSeeder], &downloadWG, f, i, chunksStatuses, mutex, &numOfDownloadedChunks)
 		}
 		tmpSeeder = (tmpSeeder + 1) % len(list)
 	}
@@ -296,7 +311,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 }
 
 func (peer Peer) ListenPeer() {
-	var pListenAddr, err = net.ResolveTCPAddr("tcp4", ":9093")
+	var pListenAddr, err = net.ResolveTCPAddr("tcp4", ":9092")
 	CheckError(err)
 	fmt.Println(pListenAddr.String())
 
@@ -313,7 +328,6 @@ func (peer Peer) ListenPeer() {
 
 		go peer.handlePeer(conn)
 	}
-
 }
 
 func (peer Peer) handlePeer(conn *net.TCPConn) {
@@ -326,8 +340,6 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 	msg := MsgToNode{}
 	err := json.Unmarshal([]byte(msgFromPeer), &msg)
 
-	fmt.Printf("[handlePeer] Dobio rootHash: %+v\n", msg.RootHash)
-
 	f, err := os.Open(peer.MyFolderPath+"/"+peer.MyFiles[msg.RootHash].Name)
 	CheckError(err)
 	defer f.Close()
@@ -336,8 +348,6 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 	finfo, err := f.Stat()
 	CheckError(err)
 
-	fmt.Printf("[handlePeer] finfo size: %d\n", finfo.Size())
-
 	path := peer.MyFolderPath+"/"+peer.MyFiles[msg.RootHash].Name
 	tmpWriter.WriteFile(path, msg.ChunkNum, *peer.MyFiles[msg.RootHash].ChunkSize, finfo.Size())
 }
@@ -345,7 +355,7 @@ func (peer Peer) handlePeer(conn *net.TCPConn) {
 func (peer Peer) connectToPeer(fname string, IP string, group *sync.WaitGroup, f *os.File, numOfPart int64, chunkStatuses []int, mutex *sync.Mutex, numOfDownloaded *int64) {
 	fmt.Printf("[connectToPeer] About to dial: %+v\n", IP)
 
-	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9093")
+	rAddr, err := net.ResolveTCPAddr("tcp", IP+":9092")
 
 	conn, err := net.DialTCP("tcp", nil, rAddr)
 	CheckError(err)

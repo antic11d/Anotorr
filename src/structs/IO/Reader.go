@@ -1,7 +1,6 @@
 package IO
 
 import (
-	"fmt"
 	"net"
 	"strconv"
 )
@@ -21,11 +20,9 @@ func (r Reader) Read() string  {
 }
 
 func appendBuffer(dest []byte, src []byte, offset int64, length int64) []byte {
-	//fmt.Println("offset:", offset, "len:", length, "src len:", len(src))
 	var i int64
 	j := 0
 	for i = offset; i < length + offset; i++ {
-		//fmt.Println("Lepim na indeks ", i)
 		dest[i] = src[j]
 		j++
 	}
@@ -47,14 +44,10 @@ func (r Reader) ReadFile() ([]byte, int64) {
 
 	var sum int64 = 0
 
-	fmt.Println("In", r.Conn.RemoteAddr(), "psize:", pSize)
-
 	for i := 0; ; i++ {
 		n, err := r.Conn.Read(buff)
 
 		CheckError(err)
-
-		//fmt.Printf("[ReadFile] %+v-ti read Od %+v sam dobio bajtove: %+v\n", i, r.Conn.RemoteAddr(), n)
 
 		finalBuff = appendBuffer(finalBuff, buff[:n], sum, int64(n))
 
@@ -62,7 +55,6 @@ func (r Reader) ReadFile() ([]byte, int64) {
 
 		sum += int64(n)
 		if sum == int64(pSize) {
-			fmt.Println("About to break in:",r.Conn.RemoteAddr(), "sum:", sum)
 			break
 		}
 	}

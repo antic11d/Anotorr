@@ -38,7 +38,7 @@ func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, file
 
 	// ne chunksize nego ono sto mi sracunamo
 	tmpPartSize := strconv.FormatInt(sizeForSending,10)
-	fmt.Printf("sizeForSending: %d\n", sizeForSending)
+	//fmt.Printf("sizeForSending: %d\n", sizeForSending)
 	CheckError(err)
 
 	// Saljem downloaderu velicinu parta
@@ -62,8 +62,6 @@ func (w Writer) WriteFile(filename string, chunkNum int64, chunkSize int64, file
 		CheckError(err)
 
 		bytesSent += int64(n)
-
-		fmt.Println("Poslao : ", bytesSent)
 	}
 
 	CheckError(err)

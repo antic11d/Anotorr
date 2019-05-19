@@ -10,12 +10,15 @@ type DownloadRequestKey struct {
 }
 
 type DownloadRequest struct {
-	CryptedIPs []string                //*list.List
-	Served *int // 0 - lista seedera je prazna, ako imas fajl kriptuj i vrati mi (treker je ja)
-				// 1 - saljem ti listu ljudi od kojih mozes da skidas (imas ih u CryptedIPs (treker je ja)
+	CryptedIPs Matrix
+	Served *int
 }
 
 type WrappedRequest struct {
 	Key *DownloadRequestKey
 	Value *DownloadRequest
+}
+
+type Matrix struct {
+	Arr [][]byte
 }
