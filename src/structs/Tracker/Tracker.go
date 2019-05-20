@@ -62,15 +62,13 @@ func (tracker Tracker) HandleNode(conn *net.TCPConn) {
 	if option == "D" {
 		tracker.HandleDownload(callerIP, reader, writer)
 	} else if option == "S" {
-		writer.Write("Samo ti seeduj...")
+		writer.Write("Just keep seeding...")
 	} else {
 		writer.Write("Choose a valid option")
 	}
 }
 
 func (tracker Tracker) HandleDownload(caller string, reader IO.Reader, writer IO.Writer) {
-	//caller := strings.Split(writer.Conn.RemoteAddr().String(), ":")[0]
-
 	// Treba da mu dam spisak svih dostupnih fajlova
 	sliceList := tracker.AvailableFiles.ToSlice()
 
@@ -91,7 +89,6 @@ func (tracker Tracker) HandleDownload(caller string, reader IO.Reader, writer IO
 	CheckError(err)
 
 	var fInfo *File.File
-
 	fInfo = tracker.Map[requestFromPeer.RootHash]
 
 	fMarshall, err := json.Marshal(fInfo)
@@ -133,7 +130,7 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	peerAddr, err := net.ResolveTCPAddr("tcp", pIP+":9096")
 	CheckError(err)
 
-	tmpConn, err := net.DialTCP("tcp", nil, peerAddr) // 9091 hardkodovano jer tamo slusa peer
+	tmpConn, err := net.DialTCP("tcp", nil, peerAddr)
 	CheckError(err)
 
 	tmpReader := IO.Reader{tmpConn}
@@ -151,13 +148,16 @@ func (tracker Tracker) contactPeer(pIP string, tID int, requestFromPeer *Request
 	_, err = tmpReader.Conn.Read(cryptedPIP)
 	CheckError(err)
 
-	// ovde sinhronizuj tredove
-	mutex.Lock()
+	fmt.Println(cryptedPIP)
+	if cryptedPIP[0] != 110 {
+		// ovde sinhronizuj tredove
+		mutex.Lock()
 
-	tracker.DownloadRequests[*requestFromPeer].CryptedIPs.Arr =
-		append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs.Arr, cryptedPIP)
+		tracker.DownloadRequests[*requestFromPeer].CryptedIPs.Arr =
+			append(tracker.DownloadRequests[*requestFromPeer].CryptedIPs.Arr, cryptedPIP)
 
-	mutex.Unlock()
+		mutex.Unlock()
+	}
 }
 
 func CheckError(err error) {

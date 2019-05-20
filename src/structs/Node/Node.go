@@ -27,11 +27,11 @@ type Peer struct {
 	PeerListenAddr *net.TCPAddr
 	ListenerTracker *net.TCPListener
 	ListenerPeer *net.TCPListener
-	ReqConn *net.TCPConn // Konekcija koja se inicijalno ostvaruje za postovanje zahteva
+	ReqConn *net.TCPConn
 	WaitGroup sync.WaitGroup
 	MyFolderPath string
 	MyFiles map[string] File.File
-	MyTrees map[string] MerkleTree.Merkle //Za svaki root hash ja cuvam merkle stablo za njega
+	MyTrees map[string] MerkleTree.Merkle
 	SetMyfNames mapset.Set
 	SetMyFiles mapset.Set
 	LocalAddr string
@@ -102,16 +102,10 @@ func InitializeNode() (p *Peer){
 	name = "Sta_god"
 
 	var wg sync.WaitGroup
-	p = &Peer{ID:name, PrivateKey:pk, IP: getMyIP(), WaitGroup:wg}
+	p = &Peer{ID:name, PrivateKey:pk, IP: getLocalIP(), WaitGroup:wg}
 	p.MyFiles, p.SetMyfNames, p.SetMyFiles = initListOfFiles()
 
 	p.MyFolderPath = FOLDER_PATH
-
-	/*
-	for k, v := range p.MyFiles {
-		fmt.Printf("%+v -> ", k)
-		fmt.Printf("%+v %+v %+v\n", *v.Size, *v.ChunkSize, *v.Chunks)
-	}*/
 
 	return p
 }
@@ -215,10 +209,13 @@ func (peer Peer) handleTracker(conn *net.TCPConn) {
 			[]byte(""),
 		)
 		CheckError(err)
+		fmt.Println(len(cryptedIP))
 
 		cryptedMsg := fmt.Sprintf("%v", cryptedIP)
 		fmt.Println(cryptedMsg)
 		tmpWriter.Conn.Write(cryptedIP)
+	} else {
+		tmpWriter.Conn.Write([]byte("n"))
 	}
 }
 func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reader) {
@@ -227,7 +224,6 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	filesList := trackerReader.Read()
 
 	fmt.Println(separator+"Avaliable files:\n"+filesList+separator)
-	// STATUS 0 = NIJE SKINUT, STATUS 1 = TRENUTNO SE SKIDA, STATUS 2 = SKINUT
 
 	var fname string
 	_, err := fmt.Scanf("%s\n", &fname)
@@ -252,7 +248,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	var numOfDownloadedChunks int64 = 0
 
 	chunksStatuses := make([]int, numOfChunks)
-
+	// STATUS 0 = NIJE SKINUT, STATUS 1 = TRENUTNO SE SKIDA, STATUS 2 = SKINUT
 	var i int64
 	for i = 0; i < numOfChunks; i++ {
 		chunksStatuses[i] = 0
@@ -270,7 +266,6 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 	decryptedList := make([]string, len(list))
 
 	for i, cryptedIP := range list {
-		fmt.Println(cryptedIP)
 		fmt.Println(len(cryptedIP))
 		decryptedByte, err := rsa.DecryptOAEP(
 			sha256.New(),
@@ -284,7 +279,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 		decryptedList[i] = fmt.Sprintf("%s", decryptedByte)
 	}
 
-	f, err := os.Create(peer.MyFolderPath+"/down_" + fInfo.Name)
+	f, err := os.Create(peer.MyFolderPath+"/" + fInfo.Name)
 
 	//Ovde sada cekamo dok se ne skupe svi skinuti cankovi
 	tmpSeeder := 0
@@ -306,6 +301,7 @@ func (peer Peer) RequestDownload(trackerWriter IO.Writer, trackerReader IO.Reade
 
 	CheckError(err)
 	downloadWG.Wait()
+	fmt.Println("Downloaded!")
 }
 
 func (peer Peer) ListenPeer() {

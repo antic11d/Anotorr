@@ -6,7 +6,6 @@
 		"./structs/Tracker"
 		"fmt"
 		"github.com/deckarep/golang-set"
-		"gitlab.com/NebulousLabs/go-upnp"
 		"net"
 		"strings"
 	)
@@ -23,6 +22,7 @@ var tracker = Tracker.Tracker{tcpAddr,
 }
 
 func main() {
+	/*
 	d, err := upnp.Discover()
 	Tracker.CheckError(err)
 
@@ -31,8 +31,8 @@ func main() {
 	Tracker.CheckError(err)
 	fmt.Println(separator+"Your external IP is:" + ip + separator)
 
-	err = d.Forward(9095, "upnp goTorr 2")
-	Tracker.CheckError(err)
+	err = d.Forward(9095, "upnp Anotorr 2")
+	Tracker.CheckError(err)*/
 
 	listener, err := net.ListenTCP("tcp", tracker.Addr)
 
