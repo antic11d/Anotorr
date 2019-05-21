@@ -1,4 +1,4 @@
-# goTorr
+# Anotorr
 
 ### Project summary
 
