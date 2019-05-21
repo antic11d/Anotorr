@@ -14,18 +14,24 @@ Important aspect is that tracker does not contains IPs of every node that contai
 * Known issue is that UPnP protocol isn't supported on all router devices, also mobile network operator does not support uPnP so our app is (for now) available only for pc.
 ***
 ### Prerequisites:
-* For running a node in network, ports 9091 and 9093 must be free.
+1. For running a node in network:
+    1. ports 9091 and 9093 must be free.
 
-* For running tracker server, port 9095 must be free.
+2. For running tracker server:
+    1. port 9095 must be free.
 
-* Of course, for both roles, router needs to be UPnP enabled.  
+3. Of course, for both roles, router needs to be UPnP enabled.  
 ***
 ### Usage:
 * For running a node: `sudo ./PeerMain`
 * For running tracker: `./TrackerMain`  
 ***
-### Platforms:
-* Our project is being developed and tested on Linux operating systems, but there is no reason it would not work on Windows.  
+### Libraries:
+* Except standard golang libraries we've used:
+
+    1. `"crypto/rand"` `"crypto/rsa"` `"crypto/sha256"`  - for encryption algorithms and data structures
+    2. `"github.com/deckarep/golang-set"` - for thread-safe Set implementation
+    3. `"gitlab.com/NebulousLabs/go-upnp"` - for UPnP implementation
 ***
 ### Language in use:  
 * __Go__
